@@ -1,0 +1,61 @@
+import "dotenv/config";
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  MessageFlags,
+} from "discord.js";
+import { hasStaffRole } from "./security/permissions.js";
+import { registerCommands } from "./commands/register.js";
+
+const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
+const missing = required.filter((key) => !process.env[key]);
+
+if (missing.length) {
+  console.error(`VEXORA: Fehlende Umgebungsvariablen: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds],
+});
+
+client.once(Events.ClientReady, (readyClient) => {
+  console.log(`VEXORA Bot online: ${readyClient.user.tag}`);
+});
+
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "vexora-status") {
+    // Always re-check the invoking member's real role IDs on the server.
+    if (!hasStaffRole(interaction.member)) {
+      await interaction.reply({
+        content: "Zugriff verweigert: Nur Mitglieder mit der konfigurierten Owner- oder Moderator-Rolle dürfen diese Funktion nutzen.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    await interaction.reply({
+      content: "VEXORA Bot ist online. Die Rollenprüfung funktioniert.",
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+});
+
+client.on(Events.Error, (error) => {
+  console.error("VEXORA Discord-Verbindungsfehler:", error);
+});
+
+try {
+  await registerCommands({
+    token: process.env.DISCORD_TOKEN,
+    clientId: process.env.DISCORD_CLIENT_ID,
+    guildId: process.env.DISCORD_GUILD_ID,
+  });
+  await client.login(process.env.DISCORD_TOKEN);
+} catch (error) {
+  console.error("VEXORA konnte nicht gestartet werden:", error);
+  process.exit(1);
+}

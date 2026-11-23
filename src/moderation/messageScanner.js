@@ -44,7 +44,7 @@ export function attachMessageScanner(client) {
         return;
       }
 
-      const safeContent = message.content.replace(/@/g, "@\\u200b").slice(0, 1200);
+      const safeContent = message.content.replace(/@/g, "@\u200b").slice(0, 1200);
       const report = await logChannel.send({
         content: [
           "**VEXORA – Verdächtige Aktivität erkannt**",

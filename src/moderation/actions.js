@@ -5,7 +5,7 @@ import {
   MessageFlags,
   PermissionsBitField,
 } from "discord.js";
-import { hasStaffRole, isOwner } from "../security/permissions.js";
+import { hasStaffRole, isOwner, canManageTarget } from "../security/permissions.js";
 
 const PREFIX = "vexmod";
 const VALID_ACTIONS = new Set(["warn", "ignore", "kick", "ban", "ban-confirm", "cancel"]);
@@ -62,6 +62,22 @@ export async function handleModerationButton(interaction) {
 
   try {
     const guild = interaction.guild;
+    if (action === "kick" || action === "ban-confirm") {
+      const target = await guild.members.fetch(userId).catch(() => null);
+      const botMember = guild.members.me;
+      if (!target || !canManageTarget(member, target, botMember)) {
+        await interaction.followUp({ content: "Sicherheitsstopp: Dieses Mitglied kann wegen Rollenrang oder Berechtigungen nicht verwaltet werden.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      if (action === "kick" && !botMember.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+        await interaction.followUp({ content: "Dem Bot fehlt die Berechtigung Mitglieder kicken.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      if (action === "ban-confirm" && !botMember.permissions.has(PermissionsBitField.Flags.BanMembers)) {
+        await interaction.followUp({ content: "Dem Bot fehlt die Berechtigung Mitglieder bannen.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+    }
     const reason = action === "warn" ? "Verwarnung nach manueller Teamprüfung" :
       action === "ignore" ? "Meldung nach manueller Prüfung ignoriert" :
       action === "kick" ? "Kick nach manueller Teamprüfung" : "Bann nach Owner-Bestätigung";

@@ -8,17 +8,18 @@
   <meta name="description" content="VEXORA Bot – Moderation, Teamverwaltung und Community-Funktionen für Discord.">
   <style>
     :root{color-scheme:dark;--bg:#0b1220;--panel:#121d30;--line:#26364f;--text:#edf3ff;--muted:#a8b6cc;--accent:#6d9cff}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#1b3155 0,transparent 42%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#1b3155 0,transparent 42%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
     .wrap{width:min(100% - 36px,1040px);margin:auto}.nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;border-bottom:1px solid var(--line)}
     .brand{font-weight:850;letter-spacing:.12em}.pill{border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:13px}
     main{padding:76px 0 56px}.eyebrow{color:#9dbbff;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800}
     h1{font-size:clamp(42px,8vw,76px);line-height:1.02;letter-spacing:-.05em;margin:16px 0}p{color:var(--muted);max-width:680px}
-    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 54px}.btn{display:inline-flex;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:750;border:1px solid var(--line);color:var(--text);background:var(--panel)}
-    .primary{background:var(--accent);color:#071326;border-color:transparent}.disabled{opacity:.55;cursor:not-allowed}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 54px}.btn{display:inline-flex;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:750;border:1px solid var(--line);color:var(--text);background:var(--panel);cursor:pointer}
+    .primary{background:var(--accent);color:#071326;border-color:transparent}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{padding:20px;border:1px solid var(--line);background:linear-gradient(145deg,#15233a,#101a2b);border-radius:18px}
     .card h2{font-size:18px;margin:0 0 8px}.card p{font-size:14px;margin:0}.icon{font-size:22px;margin-bottom:12px}
+    #einladung{margin-top:26px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
     footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
-    a:focus-visible{outline:3px solid white;outline-offset:3px}
+    a:focus-visible,button:focus-visible{outline:3px solid white;outline-offset:3px}
   </style>
 </head>
 <body>
@@ -27,17 +28,20 @@
     <main>
       <div class="eyebrow">Community · Moderation · Verwaltung</div>
       <h1>VEXORA Bot.<br>Dein Server. Deine Regeln.</h1>
-      <p>VEXORA Bot ist dein geplanter Discord-Begleiter für Community- und Rollenspiel-Server – mit rollenbasierten Team-Rechten, Moderationsprüfungen und zentralen Verwaltungsfunktionen.</p>
+      <p>VEXORA Bot ist dein Discord-Begleiter für Community- und Rollenspiel-Server – mit rollenbasierten Team-Rechten, Moderationsprüfungen und zentralen Verwaltungsfunktionen.</p>
       <div class="actions">
-        <a class="btn primary disabled" id="invite" href="#" aria-disabled="true">Bot einladen – Einrichtung folgt</a>
-        <a class="btn" href="https://github.com/dustinkawasaki/Vexora-funk" target="_blank" rel="noopener">Quellcode auf GitHub</a>
+        <a class="btn primary" href="#einladung">Bot-Einladung</a>
+        <a class="btn" href="#funktionen">Funktionen ansehen</a>
       </div>
-      <section class="grid" aria-label="Funktionen">
+      <section class="grid" id="funktionen" aria-label="Funktionen">
         <article class="card"><div class="icon">🛡️</div><h2>Moderation</h2><p>Verdächtige Nachrichten werden dem Team zur manuellen Prüfung gemeldet.</p></article>
         <article class="card"><div class="icon">🔐</div><h2>Team-Sicherheit</h2><p>Berechtigungen werden anhand echter Discord-Rollen-IDs geprüft.</p></article>
         <article class="card"><div class="icon">👥</div><h2>Community</h2><p>Die Grundlage für Begrüßungen, Informationen und Serververwaltung.</p></article>
       </section>
-      <p style="margin-top:26px;font-size:13px">Hinweis: Die Website ist öffentlich erreichbar. Der Bot selbst ist noch nicht mit Discord verbunden oder dauerhaft gestartet.</p>
+      <section id="einladung">
+        <h2>Bot-Einladung</h2>
+        <p>Der Einladelink wird aktiviert, sobald die Discord-Anwendungs-ID eingetragen ist. Der Bot ist aktuell noch nicht dauerhaft mit Discord verbunden.</p>
+      </section>
     </main>
     <footer>© VEXORA Bot · Community- und Rollenspiel-Projekt · Kein echter Notruf- oder Einsatzdienst.</footer>
   </div>

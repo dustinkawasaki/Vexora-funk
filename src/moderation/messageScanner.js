@@ -17,7 +17,7 @@ function findMatchedTerm(content, terms) {
 }
 
 function actionRow(channelId, messageId, userId, reportId) {
-  const id = (action) => `vexmod:${action}:${channelId}:${messageId}:${userId}:${reportId}`;
+  const id = (action) => \`vexmod:\${action}:\${channelId}:\${messageId}:\${userId}:\${reportId}\`;
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(id("warn")).setLabel("Verwarnen").setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId(id("ignore")).setLabel("Ignorieren").setStyle(ButtonStyle.Secondary),
@@ -48,16 +48,16 @@ export function attachMessageScanner(client) {
       const report = await logChannel.send({
         content: [
           "**VEXORA – Verdächtige Aktivität erkannt**",
-          `Spieler: <@${message.author.id}> (${message.author.id})`,
-          `Kanal: <#${message.channelId}>`,
-          `Zeit: <t:${Math.floor(message.createdTimestamp / 1000)}:F>`,
+          \`Spieler: <@\${message.author.id}> (\${message.author.id})\`,
+          \`Kanal: <#\${message.channelId}>\`,
+          \`Zeit: <t:\${Math.floor(message.createdTimestamp / 1000)}:F>\`,
           "Trefferkategorie: konfigurierter Begriff",
-          `Erkannter Begriff: ||${matchedTerm}||`,
-          `Nachricht: > ${safeContent.replace(/\\n/g, "\\n> ")}`,
-          `Nachricht öffnen: ${message.url}`,
+          \`Erkannter Begriff: ||\${matchedTerm}||\`,
+          \`Nachricht: > \${safeContent.replace(/\n/g, "\n> ")}\`,
+          \`Nachricht öffnen: \${message.url}\`,
           "",
           "Es wurde **keine automatische Strafe** ausgelöst. Bitte prüft den Kontext manuell.",
-        ].join("\\n"),
+        ].join("\n"),
         allowedMentions: { parse: [] },
       });
       await report.edit({ components: [actionRow(message.channelId, message.id, message.author.id, report.id)] });

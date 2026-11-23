@@ -4,11 +4,13 @@
   "private": true,
   "description": "Modular Discord community and roleplay management bot for VEXORA.",
   "type": "module",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js && node --check src/security/permissions.js && node --check src/commands/register.js"
+    "check": "node --check src/index.js && node --check src/security/permissions.js && node --check src/commands/register.js && node --check src/moderation/messageScanner.js && node --check src/moderation/actions.js"
   },
   "dependencies": {
     "discord.js": "^14.19.3",

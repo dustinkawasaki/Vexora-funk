@@ -1,16 +1,44 @@
-import { REST, Routes, SlashCommandBuilder } from "discord.js";
+import { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
+
+const factionChoices = [
+  { name: "Polizei", value: "police" },
+  { name: "Rettungsdienst", value: "ems" },
+  { name: "Feuerwehr", value: "fire" },
+];
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName("vexora-status")
-    .setDescription("Zeigt den Status des VEXORA-Bots (nur Team).")
-    .toJSON(),
+  new SlashCommandBuilder().setName("vexora-status").setDescription("Zeigt den Status von VEXORA Bot."),
+  new SlashCommandBuilder().setName("kick").setDescription("Entfernt ein Mitglied vom Server.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addStringOption(o => o.setName("grund").setDescription("Grund der Maßnahme").setMaxLength(400)),
+  new SlashCommandBuilder().setName("ban").setDescription("Bannt ein Mitglied (nur Owner).")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addStringOption(o => o.setName("grund").setDescription("Grund der Maßnahme").setMaxLength(400)),
+  new SlashCommandBuilder().setName("warn").setDescription("Verwarnt ein Mitglied und protokolliert den Vorgang.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addStringOption(o => o.setName("grund").setDescription("Grund der Verwarnung").setRequired(true).setMaxLength(400)),
+  new SlashCommandBuilder().setName("clear").setDescription("Löscht mehrere Nachrichten.")
+    .addIntegerOption(o => o.setName("anzahl").setDescription("Anzahl (2–100)").setMinValue(2).setMaxValue(100).setRequired(true)),
+  new SlashCommandBuilder().setName("promote").setDescription("Weist einem Mitglied eine höhere/ausgewählte Rangrolle zu.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addRoleOption(o => o.setName("rolle").setDescription("Rolle, die vergeben werden soll").setRequired(true)),
+  new SlashCommandBuilder().setName("demote").setDescription("Entfernt eine Rangrolle von einem Mitglied.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addRoleOption(o => o.setName("rolle").setDescription("Rolle, die entfernt werden soll").setRequired(true)),
+  new SlashCommandBuilder().setName("einstellen").setDescription("Stellt ein Mitglied in eine Fraktion ein.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addStringOption(o => o.setName("fraktion").setDescription("Fraktion").setRequired(true).addChoices(...factionChoices)),
+  new SlashCommandBuilder().setName("feuern").setDescription("Entlässt ein Mitglied aus einer Fraktion.")
+    .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
+    .addStringOption(o => o.setName("fraktion").setDescription("Fraktion").setRequired(true).addChoices(...factionChoices)),
+  new SlashCommandBuilder().setName("fraktion").setDescription("Zeigt die eingerichteten VEXORA-Fraktionen."),
+  new SlashCommandBuilder().setName("funk").setDescription("Sendet eine Nachricht in den konfigurierten Funkkanal.")
+    .addStringOption(o => o.setName("nachricht").setDescription("Funkmeldung").setRequired(true).setMaxLength(1500)),
+  new SlashCommandBuilder().setName("vexora-hilfe").setDescription("Zeigt die verfügbaren VEXORA-Befehle."),
 ];
 
 export async function registerCommands({ token, clientId, guildId }) {
   const rest = new REST({ version: "10" }).setToken(token);
-  await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-    body: commands,
-  });
-  console.log("VEXORA: Guild-Slash-Commands registriert.");
+  await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands.map(c => c.toJSON()) });
+  console.log("VEXORA: Slash-Commands registriert.");
 }

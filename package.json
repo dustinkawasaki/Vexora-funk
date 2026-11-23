@@ -1,8 +1,8 @@
 {
-  "name": "vexora-discord-bot",
+  "name": "vexora-bot",
   "version": "0.1.0",
   "private": true,
-  "description": "Modular Discord community and roleplay management bot for VEXORA.",
+  "description": "VEXORA Bot – Discord community moderation and management bot.",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"

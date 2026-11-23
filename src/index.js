@@ -8,6 +8,7 @@ import {
 import { hasStaffRole } from "./security/permissions.js";
 import { registerCommands } from "./commands/register.js";
 import { attachMessageScanner } from "./moderation/messageScanner.js";
+import { handleModerationButton } from "./moderation/actions.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
 const missing = required.filter((key) => !process.env[key]);
@@ -33,14 +34,15 @@ client.once(Events.ClientReady, (readyClient) => {
 attachMessageScanner(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  try {
+    if (interaction.isButton()) {
+      const handled = await handleModerationButton(interaction);
+      if (handled) return;
+    }
+    if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "vexora-status") {
-    try {
-      // Fetch the current guild member from Discord, then check actual role IDs.
-      // Never authorize based on nickname, display name, or a client-side button.
+    if (interaction.commandName === "vexora-status") {
       const member = await interaction.guild?.members.fetch(interaction.user.id);
-
       if (!hasStaffRole(member)) {
         await interaction.reply({
           content: "Zugriff verweigert: Nur Mitglieder mit der konfigurierten Owner- oder Moderator-Rolle dürfen diese Funktion nutzen.",
@@ -48,19 +50,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
         return;
       }
-
       await interaction.reply({
         content: "VEXORA Bot ist online. Die Rollenprüfung funktioniert.",
         flags: MessageFlags.Ephemeral,
       });
-    } catch (error) {
-      console.error("VEXORA: Rollenprüfung fehlgeschlagen:", error);
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply({
-          content: "Die Berechtigung konnte gerade nicht sicher geprüft werden. Bitte später erneut versuchen.",
-          flags: MessageFlags.Ephemeral,
-        });
-      }
+    }
+  } catch (error) {
+    console.error("VEXORA: Interaktion fehlgeschlagen:", error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "Die Aktion konnte nicht sicher ausgeführt werden. Bitte später erneut versuchen.",
+        flags: MessageFlags.Ephemeral,
+      }).catch(() => null);
     }
   }
 });

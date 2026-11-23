@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { hasStaffRole } from "./security/permissions.js";
 import { registerCommands } from "./commands/register.js";
+import { attachMessageScanner } from "./moderation/messageScanner.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
 const missing = required.filter((key) => !process.env[key]);
@@ -17,12 +18,19 @@ if (missing.length) {
 }
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`VEXORA Bot online: ${readyClient.user.tag}`);
 });
+
+attachMessageScanner(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;

@@ -9,6 +9,8 @@ import { handleModerationButton } from "./moderation/actions.js";
 import { attachLogging } from "./events/logging.js";
 import { getGuildEnv } from "./config/guildConfig.js";
 import { attachActivityGuard } from "./moderation/activityGuard.js";
+import { attachAccountProtection } from "./moderation/accountProtection.js";
+import { attachWeeklyScanner } from "./moderation/weeklyScanner.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
 const missing = required.filter(key => !process.env[key]);
@@ -26,6 +28,8 @@ client.once(Events.ClientReady, ready => console.log(`VEXORA Bot online: ${ready
 attachMessageScanner(client);
 attachLogging(client);
 attachActivityGuard(client);
+attachAccountProtection(client);
+attachWeeklyScanner(client);
 
 const factionEnv = { police: "POLICE_ROLE_ID", ems: "EMS_ROLE_ID", fire: "FIRE_ROLE_ID" };
 const factionNames = { police: "Polizei", ems: "Rettungsdienst", fire: "Feuerwehr" };

@@ -16,5 +16,5 @@ create index if not exists vexora_global_warnings_user_active_idx
   on public.vexora_global_warnings (user_id, active, issued_at desc);
 
 alter table public.vexora_global_warnings enable row level security;
-revoke all on table public.vexora_global_warnings from public, anon, authenticated;
+revoke all on table public.vexora_global_warnings from public, anon, authenticated, service_role;
 grant select, insert, update on table public.vexora_global_warnings to service_role;

@@ -75,7 +75,7 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         const userId = interaction.options.getString("discord_id", true).trim();
         const reason = interaction.options.getString("grund", true).trim();
-        if (!/^\\d{17,20}$/.test(userId)) return reply(interaction, "Bitte gib eine gültige Discord-ID mit 17 bis 20 Ziffern ein.");
+        if (!/^\d{17,20}$/.test(userId)) return reply(interaction, "Bitte gib eine gültige Discord-ID mit 17 bis 20 Ziffern ein.");
         if (!reason || reason.length > 400) return reply(interaction, "Der Grund muss zwischen 1 und 400 Zeichen lang sein.");
         const warning = await createGlobalWarning({ userId, guildId: interaction.guildId, reason, issuedBy: interaction.user.id });
         if (!warning) throw new Error("Supabase hat keinen gespeicherten Verwarnungseintrag zurückgegeben.");

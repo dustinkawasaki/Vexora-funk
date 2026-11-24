@@ -33,7 +33,7 @@ header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:
 <div class="field"><label for="funkChannel">Funkkanal</label><input id="funkChannel" placeholder="Discord-Kanal auswählen (folgt nach OAuth)"></div></div></section>
 <section class="section" id="protection"><h2>🛡️ Schutzsysteme</h2><p>Schalte die Module für diesen Server ein oder aus. Die Einstellungen werden serverseitig gespeichert. Live-Nachrichtenüberwachung benötigt zusätzlich einen dauerhaften Discord-Gateway-Dienst.</p>
 <div class="switchrow"><div><b>Moderations-Logs</b><small>Wichtige Moderationsaktionen protokollieren</small></div><input type="checkbox" id="logsEnabled" checked></div>
-<div class="switchrow"><div><b>Nachrichtenfilter</b><small>Verdächtige Begriffe zur Teamprüfung melden</small></div><input type="checkbox" id="filterEnabled"></div>
+<div class="switchrow"><div><b>Nachrichtenfilter</b><small>Verdächtige Begriffe zur Teamprüfung melden</small></div><input type="checkbox" id="filterEnabled"></div><div class="field" style="margin:12px 0"><label for="blockedTerms">Zu prüfende Begriffe (mit Komma trennen)</label><input id="blockedTerms" maxlength="1000" placeholder="Begriff 1, Begriff 2, Begriff 3"></div>
 <div class="switchrow"><div><b>Spam-Schutz</b><small>Wiederholte Nachrichten erkennen</small></div><input type="checkbox" id="spamEnabled"></div>
 <div class="switchrow"><div><b>Raid-Schutz</b><small>Ungewöhnlich viele Beitritte erkennen</small></div><input type="checkbox" id="raidEnabled"></div>
 <div class="switchrow"><div><b>Willkommensnachricht</b><small>Neue Mitglieder begrüßen</small></div><input type="checkbox" id="welcomeEnabled"></div></section>
@@ -43,8 +43,8 @@ header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:
 <div class="savebar"><span class="muted" id="saveStatus">Noch nicht gespeichert</span><div class="actions" style="margin:0"><button class="btn" id="resetBtn">Zurücksetzen</button><button class="btn primary" id="saveBtn">Einstellungen speichern</button></div></div>
 </main></div>
 <script>
-const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission"];
-const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles"};
+const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission","blockedTerms"];
+const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles",blockedTerms:""};
 const status=document.getElementById("saveStatus");
 const API="https://vexora-discord.dustinleon11.workers.dev";
 const SESSION_KEY="vexora-session";

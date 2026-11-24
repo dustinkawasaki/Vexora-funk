@@ -36,15 +36,24 @@ header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:
 <div class="switchrow"><div><b>Nachrichtenfilter</b><small>Verdächtige Begriffe zur Teamprüfung melden</small></div><input type="checkbox" id="filterEnabled"></div><div class="field" style="margin:12px 0"><label for="blockedTerms">Zu prüfende Begriffe (mit Komma trennen)</label><input id="blockedTerms" maxlength="1000" placeholder="Begriff 1, Begriff 2, Begriff 3"></div>
 <div class="switchrow"><div><b>Spam-Schutz</b><small>Wiederholte Nachrichten erkennen</small></div><input type="checkbox" id="spamEnabled"></div>
 <div class="switchrow"><div><b>Raid-Schutz</b><small>Ungewöhnlich viele Beitritte erkennen</small></div><input type="checkbox" id="raidEnabled"></div>
-<div class="switchrow"><div><b>Willkommensnachricht</b><small>Neue Mitglieder begrüßen</small></div><input type="checkbox" id="welcomeEnabled"></div></section>
+<div class="switchrow"><div><b>Willkommensnachricht</b><small>Neue Mitglieder begrüßen</small></div><input type="checkbox" id="welcomeEnabled"></div>
+<div class="switchrow"><div><b>Fake-Account-Schutz</b><small>Konten unter dem Mindestalter kommen in einen Wartebereich statt gekickt zu werden</small></div><input type="checkbox" id="accountProtectionEnabled"></div>
+<div class="fieldgrid" style="margin:14px 0">
+<div class="field"><label for="minAccountAgeDays">Mindestalter des Discord-Kontos (1–30 Tage)</label><input id="minAccountAgeDays" type="number" min="1" max="30" value="7"></div>
+<div class="field"><label for="quarantineDays">Wartezeit bis zur Freigabe (1–30 Tage)</label><input id="quarantineDays" type="number" min="1" max="30" value="7"></div>
+<div class="field"><label for="quarantineRoleId">Quarantäne-Rollen-ID</label><input id="quarantineRoleId" inputmode="numeric" placeholder="Discord-Rollen-ID"></div>
+</div>
+<p class="muted">Die Quarantäne-Rolle muss in Discord so eingerichtet sein, dass sie nur den Wartebereich sehen kann. VEXORA vergibt und entfernt diese Rolle automatisch, sofern die Bot-Rolle hoch genug steht.</p>
+<div class="switchrow"><div><b>Wöchentlicher Sicherheits-Scan</b><small>Durchsucht zugängliche Nachrichten der letzten 7 Tage nach den oben konfigurierten Begriffen und sendet dir einen Bericht per DM</small></div><input type="checkbox" id="weeklyScanEnabled"></div>
+<div class="switchrow"><div><b>Sofortige Developer-Hinweise</b><small>Bei Treffern des Nachrichtenfilters erhältst du zusätzlich eine private DM</small></div><input type="checkbox" id="instantAlertsEnabled" checked></div></section>
 <section class="section" id="team"><h2>👥 Team & Rechte</h2><p>Interne VEXORA-Moderatoren und Discord-Berechtigungen werden getrennt verwaltet. Die endgültigen Rechte werden serverseitig geprüft.</p><div class="fieldgrid">
 <div class="field"><label for="moderatorRole">Discord-Moderatorrolle (ID, Vorschau)</label><input id="moderatorRole" placeholder="Wird nach OAuth auswählbar"></div>
 <div class="field"><label for="promotePermission">Wer darf /promote und /demote?</label><select id="promotePermission"><option value="manage_roles">Mitglieder mit „Rollen verwalten“</option><option value="administrator">Nur Administratoren</option></select></div></div></section>
 <div class="savebar"><span class="muted" id="saveStatus">Noch nicht gespeichert</span><div class="actions" style="margin:0"><button class="btn" id="resetBtn">Zurücksetzen</button><button class="btn primary" id="saveBtn">Einstellungen speichern</button></div></div>
 </main></div>
 <script>
-const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission","blockedTerms"];
-const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles",blockedTerms:""};
+const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","accountProtectionEnabled","minAccountAgeDays","quarantineDays","quarantineRoleId","weeklyScanEnabled","instantAlertsEnabled","moderatorRole","promotePermission","blockedTerms"];
+const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,accountProtectionEnabled:false,minAccountAgeDays:7,quarantineDays:7,quarantineRoleId:"",weeklyScanEnabled:false,instantAlertsEnabled:true,promotePermission:"manage_roles",blockedTerms:""};
 const status=document.getElementById("saveStatus");
 const API="https://vexora-discord.dustinleon11.workers.dev";
 const SESSION_KEY="vexora-session";

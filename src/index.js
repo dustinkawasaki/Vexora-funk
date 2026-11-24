@@ -72,7 +72,11 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     const staffOnly = ["kick","ban","warn","clear","promote","demote","einstellen","feuern"];
-    if (staffOnly.includes(name) && !isModerator(member)) return reply(interaction, "Zugriff verweigert: Du brauchst eine konfigurierte Owner- oder Moderator-Rolle.");
+    if (staffOnly.includes(name) && !isModerator(member, guildEnv)) return reply(interaction, "Zugriff verweigert: Du brauchst eine konfigurierte Owner- oder Moderator-Rolle.");
+    if (["promote", "demote"].includes(name)) {
+      const requiredPermission = guildEnv.PROMOTE_PERMISSION === "administrator" ? PermissionsBitField.Flags.Administrator : PermissionsBitField.Flags.ManageRoles;
+      if (!member?.permissions?.has(requiredPermission)) return reply(interaction, guildEnv.PROMOTE_PERMISSION === "administrator" ? "Nur Administratoren dürfen diese Aktion ausführen." : "Du brauchst die Discord-Berechtigung Rollen verwalten.");
+    }
 
     if (["kick","ban","warn","promote","demote","einstellen","feuern"].includes(name)) {
       const user = interaction.options.getUser("mitglied", true);

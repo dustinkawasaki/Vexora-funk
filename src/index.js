@@ -7,6 +7,8 @@ import { registerCommands } from "./commands/register.js";
 import { attachMessageScanner } from "./moderation/messageScanner.js";
 import { handleModerationButton } from "./moderation/actions.js";
 import { attachLogging } from "./events/logging.js";
+import { getGuildEnv } from "./config/guildConfig.js";
+import { attachActivityGuard } from "./moderation/activityGuard.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
 const missing = required.filter(key => !process.env[key]);
@@ -23,11 +25,14 @@ const client = new Client({ intents: [
 client.once(Events.ClientReady, ready => console.log(`VEXORA Bot online: ${ready.user.tag}`));
 attachMessageScanner(client);
 attachLogging(client);
+attachActivityGuard(client);
 
 const factionEnv = { police: "POLICE_ROLE_ID", ems: "EMS_ROLE_ID", fire: "FIRE_ROLE_ID" };
 const factionNames = { police: "Polizei", ems: "Rettungsdienst", fire: "Feuerwehr" };
 const logAction = async (guild, title, description) => {
-  const channel = process.env.LOG_CHANNEL_ID ? await guild.channels.fetch(process.env.LOG_CHANNEL_ID).catch(() => null) : null;
+  const env = await getGuildEnv(guild.id);
+  if (env.VEXORA_LOGS_ENABLED !== "true") return;
+  const channel = env.LOG_CHANNEL_ID ? await guild.channels.fetch(env.LOG_CHANNEL_ID).catch(() => null) : null;
   if (channel?.isTextBased()) await channel.send({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle(title).setDescription(description).setTimestamp()], allowedMentions: { parse: [] } }).catch(() => null);
 };
 const reply = (i, content) => i.reply({ content, flags: MessageFlags.Ephemeral });
@@ -38,9 +43,10 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
     const name = interaction.commandName;
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
+    const guildEnv = interaction.guildId ? await getGuildEnv(interaction.guildId) : process.env;
 
     if (name === "vexora-status") {
-      return reply(interaction, `VEXORA Bot ist online. Ping: ${client.ws.ping} ms. Rollenprüfung: ${hasStaffRole(member) ? "Team erkannt" : "kein Teamzugriff"}.`);
+      return reply(interaction, `VEXORA Bot ist online. Ping: ${client.ws.ping} ms. Rollenprüfung: ${hasStaffRole(member, guildEnv) ? "Team erkannt" : "kein Teamzugriff"}.`);
     }
     if (name === "vexora-hilfe") {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle("VEXORA Bot – Hilfe").setDescription([
@@ -52,14 +58,14 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     if (name === "fraktion") {
       const lines = Object.entries(factionEnv).map(([key, envKey]) => {
-        const roleId = process.env[envKey];
+        const roleId = guildEnv[envKey];
         return `**${factionNames[key]}:** ${roleId ? `<@&${roleId}>` : "Noch nicht konfiguriert"}`;
       });
       return reply(interaction, lines.join("\n"));
     }
     if (name === "funk") {
-      if (!isModerator(member)) return reply(interaction, "Dafür brauchst du eine konfigurierte Owner- oder Moderator-Rolle.");
-      const channel = process.env.FUNK_CHANNEL_ID ? await interaction.guild.channels.fetch(process.env.FUNK_CHANNEL_ID).catch(() => null) : null;
+      if (!isModerator(member, guildEnv)) return reply(interaction, "Dafür brauchst du eine konfigurierte Owner- oder Moderator-Rolle.");
+      const channel = guildEnv.FUNK_CHANNEL_ID ? await interaction.guild.channels.fetch(guildEnv.FUNK_CHANNEL_ID).catch(() => null) : null;
       if (!channel?.isTextBased()) return reply(interaction, "Der Funkkanal ist nicht eingerichtet. Bitte FUNK_CHANNEL_ID beim Hoster setzen.");
       await channel.send({ content: `📻 **VEXORA FUNK** · <@${interaction.user.id}>\n${interaction.options.getString("nachricht")}`, allowedMentions: { parse: [] } });
       return reply(interaction, "Funkmeldung wurde gesendet.");
@@ -74,7 +80,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!target) return reply(interaction, "Mitglied wurde auf diesem Server nicht gefunden.");
       const botMember = interaction.guild.members.me;
       if (!canManageTarget(member, target, botMember)) return reply(interaction, "Sicherheitsstopp: Dieses Mitglied steht auf gleicher/höherer Rollenebene oder kann nicht verwaltet werden.");
-      if (name === "ban" && !isOwner(member)) return reply(interaction, "Bannen ist nur Ownern erlaubt.");
+      if (name === "ban" && !isOwner(member, guildEnv)) return reply(interaction, "Bannen ist nur Ownern erlaubt.");
 
       if (name === "kick" || name === "ban") {
         const permission = name === "kick" ? PermissionsBitField.Flags.KickMembers : PermissionsBitField.Flags.BanMembers;

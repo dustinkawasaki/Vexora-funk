@@ -1,4 +1,4 @@
-import { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
+import { REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const factionChoices = [
   { name: "Polizei", value: "police" },
@@ -17,6 +17,10 @@ const commands = [
   new SlashCommandBuilder().setName("warn").setDescription("Verwarnt ein Mitglied und protokolliert den Vorgang.")
     .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
     .addStringOption(o => o.setName("grund").setDescription("Grund der Verwarnung").setRequired(true).setMaxLength(400)),
+  new SlashCommandBuilder().setName("bot").setDescription("Globale VEXORA-Botverwaltung.")
+    .addSubcommand(sub => sub.setName("warn").setDescription("Erstellt eine globale Verwarnung anhand der Discord-ID.")
+      .addStringOption(o => o.setName("discord_id").setDescription("Discord-ID des betroffenen Kontos").setRequired(true).setMinLength(17).setMaxLength(20))
+      .addStringOption(o => o.setName("grund").setDescription("Nachvollziehbarer Grund der Verwarnung").setRequired(true).setMaxLength(400))),
   new SlashCommandBuilder().setName("clear").setDescription("Löscht mehrere Nachrichten.")
     .addIntegerOption(o => o.setName("anzahl").setDescription("Anzahl (2–100)").setMinValue(2).setMaxValue(100).setRequired(true)),
   new SlashCommandBuilder().setName("promote").setDescription("Weist einem Mitglied eine höhere/ausgewählte Rangrolle zu.")
@@ -37,8 +41,11 @@ const commands = [
   new SlashCommandBuilder().setName("vexora-hilfe").setDescription("Zeigt die verfügbaren VEXORA-Befehle."),
 ];
 
-export async function registerCommands({ token, clientId, guildId }) {
+export async function registerCommands({ token, clientId, guildIds }) {
+  const ids = [...new Set((guildIds || []).filter(Boolean))];
+  if (!ids.length) throw new Error("Keine Discord-Server zum Registrieren der Slash-Befehle gefunden.");
   const rest = new REST({ version: "10" }).setToken(token);
-  await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands.map(c => c.toJSON()) });
-  console.log("VEXORA: Slash-Commands registriert.");
+  const body = commands.map(command => command.toJSON());
+  for (const guildId of ids) await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body });
+  console.log(`VEXORA: Slash-Commands in ${ids.length} Server(n) registriert.`);
 }

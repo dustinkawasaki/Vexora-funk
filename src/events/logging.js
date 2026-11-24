@@ -1,9 +1,10 @@
 import { Events, EmbedBuilder } from "discord.js";
+import { getGuildEnv } from "../config/guildConfig.js";
 
 async function sendLog(guild, title, description, color = 0x2878ff) {
-  const id = process.env.LOG_CHANNEL_ID;
-  if (!id) return;
-  const channel = await guild.channels.fetch(id).catch(() => null);
+  const env = await getGuildEnv(guild.id);
+  if (env.VEXORA_LOGS_ENABLED !== "true" || !env.LOG_CHANNEL_ID) return;
+  const channel = await guild.channels.fetch(env.LOG_CHANNEL_ID).catch(() => null);
   if (!channel?.isTextBased()) return;
   const embed = new EmbedBuilder().setColor(color).setTitle(title).setDescription(description.slice(0, 4000)).setTimestamp();
   await channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => null);
@@ -11,17 +12,17 @@ async function sendLog(guild, title, description, color = 0x2878ff) {
 
 export function attachLogging(client) {
   client.on(Events.GuildMemberAdd, async member => {
-    const id = process.env.WELCOME_CHANNEL_ID;
-    if (id) {
-      const channel = await member.guild.channels.fetch(id).catch(() => null);
+    const env = await getGuildEnv(member.guild.id);
+    if (env.VEXORA_WELCOME_ENABLED === "true" && env.WELCOME_CHANNEL_ID) {
+      const channel = await member.guild.channels.fetch(env.WELCOME_CHANNEL_ID).catch(() => null);
       if (channel?.isTextBased()) await channel.send({ content: `Willkommen auf **VEXORA** <@${member.id}>! Bitte lies die Serverregeln.`, allowedMentions: { users: [member.id] } }).catch(() => null);
     }
     await sendLog(member.guild, "Mitglied beigetreten", `<@${member.id}> · ${member.user.tag} · ID: ${member.id}`, 0x22c55e);
   });
   client.on(Events.GuildMemberRemove, async member => {
-    const id = process.env.GOODBYE_CHANNEL_ID;
-    if (id) {
-      const channel = await member.guild.channels.fetch(id).catch(() => null);
+    const env = await getGuildEnv(member.guild.id);
+    if (env.VEXORA_WELCOME_ENABLED === "true" && env.GOODBYE_CHANNEL_ID) {
+      const channel = await member.guild.channels.fetch(env.GOODBYE_CHANNEL_ID).catch(() => null);
       if (channel?.isTextBased()) await channel.send({ content: `<@${member.id}> hat den Server verlassen.`, allowedMentions: { parse: [] } }).catch(() => null);
     }
     await sendLog(member.guild, "Mitglied hat verlassen", `${member.user?.tag ?? "Unbekannt"} · ID: ${member.id}`, 0xf59e0b);

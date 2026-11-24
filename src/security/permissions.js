@@ -15,7 +15,9 @@ export function hasStaffRole(member, env = process.env) {
 }
 
 export function isOwner(member, env = process.env) {
-  if (!member?.roles?.cache) return false;
+  if (!member) return false;
+  if (member.id === member.guild?.ownerId) return true;
+  if (!member.roles?.cache) return false;
   const ids = getConfiguredRoleIds(env.OWNER_ROLE_IDS);
   return member.roles.cache.some((role) => ids.has(role.id));
 }

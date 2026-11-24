@@ -6,6 +6,7 @@ import {
   PermissionsBitField,
 } from "discord.js";
 import { hasStaffRole, isOwner, canManageTarget } from "../security/permissions.js";
+import { getGuildEnv } from "../config/guildConfig.js";
 
 const PREFIX = "vexmod";
 const VALID_ACTIONS = new Set(["warn", "ignore", "kick", "ban", "ban-confirm", "cancel"]);
@@ -16,7 +17,8 @@ function makeId(action, channelId, messageId, userId, reportId) {
 
 async function authorizedMember(interaction) {
   const member = await interaction.guild?.members.fetch(interaction.user.id);
-  return member && hasStaffRole(member) ? member : null;
+  const env = await getGuildEnv(interaction.guildId);
+  return member && hasStaffRole(member, env) ? { member, env } : null;
 }
 
 async function editReport(interaction, reportId, content) {
@@ -33,7 +35,9 @@ export async function handleModerationButton(interaction) {
     return true;
   }
 
-  const member = await authorizedMember(interaction).catch(() => null);
+  const authorization = await authorizedMember(interaction).catch(() => null);
+  const member = authorization?.member;
+  const env = authorization?.env || process.env;
   if (!member) {
     await interaction.reply({ content: "Zugriff verweigert. Nur konfigurierte Owner-/Moderator-Rollen dürfen diese Buttons nutzen.", flags: MessageFlags.Ephemeral });
     return true;
@@ -44,7 +48,7 @@ export async function handleModerationButton(interaction) {
     return true;
   }
 
-  if ((action === "ban" || action === "ban-confirm") && !isOwner(member)) {
+  if ((action === "ban" || action === "ban-confirm") && !isOwner(member, env)) {
     await interaction.reply({ content: "Ein Bann darf nur von einem Owner bestätigt werden.", flags: MessageFlags.Ephemeral });
     return true;
   }

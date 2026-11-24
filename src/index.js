@@ -9,8 +9,9 @@ import { handleModerationButton } from "./moderation/actions.js";
 import { attachLogging } from "./events/logging.js";
 import { getGuildEnv } from "./config/guildConfig.js";
 import { attachActivityGuard } from "./moderation/activityGuard.js";
+import { attachGlobalWarningAlerts, createGlobalWarning, isGlobalBotModerator } from "./moderation/globalWarnings.js";
 
-const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_GUILD_ID"];
+const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID"];
 const missing = required.filter(key => !process.env[key]);
 if (missing.length) {
   console.error(`VEXORA: Fehlende Umgebungsvariablen: ${missing.join(", ")}`);
@@ -22,10 +23,31 @@ const client = new Client({ intents: [
   GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
 ] });
 
-client.once(Events.ClientReady, ready => console.log(`VEXORA Bot online: ${ready.user.tag}`));
+let commandsReady = false;
+client.once(Events.ClientReady, async ready => {
+  console.log(`VEXORA Bot online: ${ready.user.tag}`);
+  try {
+    const guildIds = [...ready.guilds.cache.keys()];
+    if (!guildIds.length && process.env.DISCORD_GUILD_ID) guildIds.push(process.env.DISCORD_GUILD_ID);
+    await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildIds });
+    commandsReady = true;
+  } catch (error) {
+    console.error("VEXORA: Slash-Commands konnten nicht registriert werden:", error);
+  }
+});
+client.on(Events.GuildCreate, async guild => {
+  if (!commandsReady) return;
+  try {
+    await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildIds: [guild.id] });
+  } catch (error) {
+    console.error(`VEXORA: Slash-Commands für Server ${guild.id} konnten nicht registriert werden:`, error);
+  }
+});
+
 attachMessageScanner(client);
 attachLogging(client);
 attachActivityGuard(client);
+attachGlobalWarningAlerts(client);
 
 const factionEnv = { police: "POLICE_ROLE_ID", ems: "EMS_ROLE_ID", fire: "FIRE_ROLE_ID" };
 const factionNames = { police: "Polizei", ems: "Rettungsdienst", fire: "Feuerwehr" };
@@ -45,12 +67,29 @@ client.on(Events.InteractionCreate, async interaction => {
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
     const guildEnv = interaction.guildId ? await getGuildEnv(interaction.guildId) : process.env;
 
+    if (name === "bot") {
+      if (!interaction.guildId) return reply(interaction, "Dieser Befehl kann nur auf einem Discord-Server verwendet werden.");
+      if (interaction.options.getSubcommand() === "warn") {
+        if (!isGlobalBotModerator(interaction.user.id)) {
+          return reply(interaction, "Zugriff verweigert. Nur freigegebene VEXORA-Developer und Bot-Moderatoren dürfen globale Verwarnungen erstellen.");
+        }
+        const userId = interaction.options.getString("discord_id", true).trim();
+        const reason = interaction.options.getString("grund", true).trim();
+        if (!/^\\d{17,20}$/.test(userId)) return reply(interaction, "Bitte gib eine gültige Discord-ID mit 17 bis 20 Ziffern ein.");
+        if (!reason || reason.length > 400) return reply(interaction, "Der Grund muss zwischen 1 und 400 Zeichen lang sein.");
+        const warning = await createGlobalWarning({ userId, guildId: interaction.guildId, reason, issuedBy: interaction.user.id });
+        if (!warning) throw new Error("Supabase hat keinen gespeicherten Verwarnungseintrag zurückgegeben.");
+        return reply(interaction, `Globale Verwarnung gespeichert. Betroffene Discord-ID: ${userId}. Eintrag: ${warning.id}`);
+      }
+    }
+
     if (name === "vexora-status") {
       return reply(interaction, `VEXORA Bot ist online. Ping: ${client.ws.ping} ms. Rollenprüfung: ${hasStaffRole(member, guildEnv) ? "Team erkannt" : "kein Teamzugriff"}.`);
     }
     if (name === "vexora-hilfe") {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle("VEXORA Bot – Hilfe").setDescription([
         "**Moderation:** /warn, /kick, /ban, /clear",
+        "**Globale Moderation:** /bot warn",
         "**Personal:** /promote, /demote, /einstellen, /feuern",
         "**Fraktionen & Funk:** /fraktion, /funk",
         "**Status:** /vexora-status"
@@ -141,7 +180,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on(Events.Error, error => console.error("VEXORA Discord-Verbindungsfehler:", error));
 try {
-  await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildId: process.env.DISCORD_GUILD_ID });
   await client.login(process.env.DISCORD_TOKEN);
 } catch (error) {
   console.error("VEXORA konnte nicht gestartet werden:", error);

@@ -1,5 +1,7 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { getGuildEnv } from "../config/guildConfig.js";
+
+const alertCooldown = new Map();
 
 function findMatchedTerm(content, terms) {
   const normalized = content.toLocaleLowerCase("de-DE");
@@ -16,11 +18,34 @@ function actionRow(channelId, messageId, userId, reportId) {
   );
 }
 
+async function alertDeveloper(client, message, matchedTerm) {
+  const key = `${message.guildId}:${message.author.id}`;
+  const now = Date.now();
+  if (now - (alertCooldown.get(key) || 0) < 5 * 60_000) return;
+  alertCooldown.set(key, now);
+  const ids = (process.env.BOT_DEVELOPER_IDS || "").split(",").map(x => x.trim()).filter(Boolean);
+  for (const id of ids) {
+    const user = await client.users.fetch(id).catch(() => null);
+    if (!user) continue;
+    const embed = new EmbedBuilder().setColor(0xf59e0b).setTitle("VEXORA – Sofortiger Sicherheits-Hinweis")
+      .setDescription([
+        `Server: ${message.guild.name} (${message.guildId})`,
+        `Mitglied: ${message.author.tag} (${message.author.id})`,
+        `Kanal: ${message.channelId}`,
+        `Treffer: ${matchedTerm}`,
+        `Nachricht: ${message.url}`,
+        "",
+        "Ein konfigurierter Begriff wurde gefunden. Bitte Kontext manuell prüfen; dies ist kein automatisches Urteil.",
+      ].join("\n")).setTimestamp();
+    await user.send({ embeds: [embed] }).catch(() => null);
+  }
+}
+
 export function attachMessageScanner(client) {
   client.on("messageCreate", async message => {
     if (!message.inGuild() || message.author.bot || !message.content) return;
     const env = await getGuildEnv(message.guildId);
-    if (env.VEXORA_FILTER_ENABLED !== "true" || !env.LOG_CHANNEL_ID) return;
+    if (env.VEXORA_FILTER_ENABLED !== "true") return;
     const terms = (env.BLOCKED_TERMS || "").split(",").map(term => term.trim().toLocaleLowerCase("de-DE")).filter(Boolean);
     if (!terms.length) return;
 
@@ -28,9 +53,11 @@ export function attachMessageScanner(client) {
     if (!matchedTerm) return;
 
     try {
+      await alertDeveloper(client, message, matchedTerm);
+      if (!env.LOG_CHANNEL_ID) return;
       const logChannel = await message.guild.channels.fetch(env.LOG_CHANNEL_ID);
       if (!logChannel?.isTextBased() || !logChannel.send) return;
-      const safeContent = message.content.replace(/@/g, "@\u200b").slice(0, 1200);
+      const safeContent = message.content.replace(/@/g, "@\\u200b").slice(0, 1200);
       const report = await logChannel.send({
         content: [
           "**VEXORA – Verdächtige Aktivität erkannt**",

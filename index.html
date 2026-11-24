@@ -4,48 +4,112 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101827">
+  <meta name="description" content="VEXORA Bot – Discord-Moderation und Serververwaltung.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VEXORA">
   <title>VEXORA Bot – Discord Bot</title>
-  <meta name="description" content="VEXORA Bot – Moderation, Teamverwaltung und Community-Funktionen für Discord.">
   <style>
     :root{color-scheme:dark;--bg:#0b1220;--panel:#121d30;--line:#26364f;--text:#edf3ff;--muted:#a8b6cc;--accent:#6d9cff}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#1b3155 0,transparent 42%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
-    .wrap{width:min(100% - 36px,1040px);margin:auto}.nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;border-bottom:1px solid var(--line)}
+    .wrap{width:min(100% - 36px,1040px);margin:auto}.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
     .brand{font-weight:850;letter-spacing:.12em}.pill{border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:13px}
-    main{padding:76px 0 56px}.eyebrow{color:#9dbbff;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800}
+    main{padding:64px 0 56px}.eyebrow{color:#9dbbff;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800}
     h1{font-size:clamp(42px,8vw,76px);line-height:1.02;letter-spacing:-.05em;margin:16px 0}p{color:var(--muted);max-width:680px}
-    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 54px}.btn{display:inline-flex;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:750;border:1px solid var(--line);color:var(--text);background:var(--panel);cursor:pointer}
-    .primary{background:var(--accent);color:#071326;border-color:transparent}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 54px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:750;border:1px solid var(--line);color:var(--text);background:var(--panel);cursor:pointer;font:inherit;font-weight:750}
+    .primary{background:var(--accent);color:#071326;border-color:transparent}.btn:disabled{opacity:.55;cursor:default}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{padding:20px;border:1px solid var(--line);background:linear-gradient(145deg,#15233a,#101a2b);border-radius:18px}
     .card h2{font-size:18px;margin:0 0 8px}.card p{font-size:14px;margin:0}.icon{font-size:22px;margin-bottom:12px}
-    #einladung{margin-top:26px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+    section.panel{margin-top:26px;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+    .small{font-size:13px}.hidden{display:none!important}.notice{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#0d1728;margin-top:12px}
     footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
     a:focus-visible,button:focus-visible{outline:3px solid white;outline-offset:3px}
+    @media(max-width:520px){main{padding-top:46px}.nav .btn{width:100%}.actions .btn{flex:1 1 100%}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header class="nav"><div class="brand">VEXORA <span style="color:#8fb2ff">BOT</span></div><a class="btn primary" href="https://discord.com/oauth2/authorize?client_id=1574504593495429250&permissions=76806&scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer">Bot jetzt einladen</a></header>
+    <header class="nav">
+      <div class="brand">VEXORA <span style="color:#8fb2ff">BOT</span></div>
+      <button id="installBtn" class="btn primary" type="button">App installieren</button>
+    </header>
     <main>
       <div class="eyebrow">Community · Moderation · Verwaltung</div>
       <h1>VEXORA Bot.<br>Dein Server. Deine Regeln.</h1>
       <p>VEXORA Bot ist dein Discord-Begleiter für Community- und Rollenspiel-Server – mit rollenbasierten Team-Rechten, Moderationsprüfungen und zentralen Verwaltungsfunktionen.</p>
       <div class="actions">
-        <a class="btn primary" href="https://discord.com/oauth2/authorize?client_id=1574504593495429250&permissions=76806&scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer">Bot-Einladen</a>
+        <a class="btn primary" href="https://discord.com/oauth2/authorize?client_id=1574504593495429250&amp;permissions=76806&amp;scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer">VEXORA zu Discord hinzufügen</a>
         <a class="btn" href="#funktionen">Funktionen ansehen</a>
       </div>
       <section class="grid" id="funktionen" aria-label="Funktionen">
-        <article class="card"><div class="icon">🛡️</div><h2>Moderation</h2><p>Verdächtige Nachrichten werden dem Team zur manuellen Prüfung gemeldet.</p></article>
-        <article class="card"><div class="icon">🔐</div><h2>Team-Sicherheit</h2><p>Berechtigungen werden anhand echter Discord-Rollen-IDs geprüft.</p></article>
-        <article class="card"><div class="icon">👥</div><h2>Community</h2><p>Die Grundlage für Begrüßungen, Informationen und Serververwaltung.</p></article>
+        <article class="card"><div class="icon">🛡️</div><h2>Moderation</h2><p>Moderationsfunktionen für deinen Discord-Server.</p></article>
+        <article class="card"><div class="icon">🔐</div><h2>Team-Sicherheit</h2><p>Berechtigungen werden anhand der Discord-Rollen und Serverrechte geprüft.</p></article>
+        <article class="card"><div class="icon">📋</div><h2>Server-Logs</h2><p>Einrichtbare Protokolle für wichtige Serverereignisse.</p></article>
       </section>
-      <section id="einladung">
-        <h2>Bot-Einladung</h2>
-        <p>Füge VEXORA Bot deinem Discord-Server hinzu. Beim Einladen kannst du den Zielserver auswählen und die angeforderten Berechtigungen bestätigen.</p>
-        <a class="btn primary" href="https://discord.com/oauth2/authorize?client_id=1574504593495429250&permissions=76806&scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer">VEXORA Bot zu Discord hinzufügen</a>
-        <p>Hinweis: Der Bot-Code muss anschließend noch auf einem Hoster gestartet und mit Discord verbunden werden, damit der Bot online ist.</p>
+      <section class="panel" id="einladung">
+        <h2>VEXORA zu Discord hinzufügen</h2>
+        <p>Der Server-Administrator kann hier VEXORA auswählen und die angeforderten Berechtigungen in Discord bestätigen.</p>
+        <a class="btn primary" href="https://discord.com/oauth2/authorize?client_id=1574504593495429250&amp;permissions=76806&amp;scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer">Bot zu Discord hinzufügen</a>
+      </section>
+      <section class="panel" id="installation">
+        <h2>VEXORA als App installieren</h2>
+        <p>Installiere das Dashboard auf deinem Handy, damit du es wie eine App vom Startbildschirm öffnen kannst.</p>
+        <button id="installBtnBottom" class="btn primary" type="button">VEXORA-App installieren</button>
+        <div id="installHelp" class="notice small hidden" role="status" aria-live="polite"></div>
       </section>
     </main>
     <footer>© VEXORA Bot · Community- und Rollenspiel-Projekt · Kein echter Notruf- oder Einsatzdienst.</footer>
   </div>
+  <script>
+    let installPrompt = null;
+    const installButtons = [document.getElementById("installBtn"), document.getElementById("installBtnBottom")];
+    const help = document.getElementById("installHelp");
+    const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    function showHelp(message){ help.textContent = message; help.classList.remove("hidden"); }
+    function updateInstallButtons(){
+      if(isStandalone()){
+        installButtons.forEach(button => {button.textContent = "App ist installiert";button.disabled = true;});
+      } else if(!installPrompt){
+        installButtons.forEach(button => {button.textContent = "Installationshilfe";});
+      }
+    }
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      installPrompt = event;
+      installButtons.forEach(button => {button.textContent = "App installieren";button.disabled = false;});
+    });
+    window.addEventListener("appinstalled", () => {
+      installPrompt = null;
+      updateInstallButtons();
+      showHelp("VEXORA wurde installiert. Du findest die App jetzt auf deinem Startbildschirm.");
+    });
+    async function installApp(){
+      if(isStandalone()){showHelp("VEXORA ist bereits als App installiert.");return;}
+      if(installPrompt){
+        installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        installPrompt = null;
+        if(choice && choice.outcome === "accepted") showHelp("Die Installation wurde gestartet.");
+        else showHelp("Die Installation wurde nicht abgeschlossen. Du kannst es später erneut versuchen.");
+        updateInstallButtons();
+        return;
+      }
+      const ua = navigator.userAgent || "";
+      if(/iPhone|iPad|iPod/i.test(ua)){
+        showHelp("Auf iPhone/iPad: Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“.");
+      } else if(/Android/i.test(ua)){
+        showHelp("Auf Android: Öffne diese Seite in Chrome, tippe auf das Drei-Punkte-Menü und wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.");
+      } else {
+        showHelp("Öffne das Browser-Menü und suche nach „App installieren“ oder „Seite als App installieren“. Falls die Option fehlt, unterstützt dieser Browser die Installation möglicherweise nicht.");
+      }
+    }
+    installButtons.forEach(button => button.addEventListener("click", installApp));
+    updateInstallButtons();
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
+    }
+  </script>
 </body>
 </html>

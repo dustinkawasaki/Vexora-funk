@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg"><title>VEXORA Dashboard</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d30;--line:#26364f;--text:#edf3ff;--muted:#a8b6cc;--accent:#6d9cff;--good:#35c98b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}button,input,select{font:inherit}a{color:inherit;text-decoration:none}
+header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#0d1728;position:sticky;top:0;z-index:3}.brand{font-weight:900;letter-spacing:.12em}.brand span{color:#8fb2ff}
+.layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 64px)}aside{border-right:1px solid var(--line);padding:22px 14px;background:#0d1728}.nav{display:grid;gap:7px}.nav a{padding:11px 13px;border-radius:10px;color:var(--muted)}.nav a.active,.nav a:hover{background:#1a2a45;color:var(--text)}main{padding:32px;max-width:1100px;width:100%;margin:auto}h1{font-size:32px;margin:0 0 8px}h2{font-size:19px;margin:0 0 12px}.muted{color:var(--muted)}.status{display:inline-flex;align-items:center;gap:8px;border:1px solid #725b32;background:#302817;color:#ffd58b;padding:6px 11px;border-radius:99px;font-size:12px}.dot{width:7px;height:7px;border-radius:50%;background:#f2b94b}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:24px 0}.card,.section{background:linear-gradient(145deg,#15233a,#101a2b);border:1px solid var(--line);border-radius:16px;padding:19px}.metric{font-size:24px;font-weight:800}.section{margin:18px 0}.section p{margin:0 0 14px;color:var(--muted)}.fieldgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.field{display:grid;gap:6px}.field label{font-weight:650;font-size:13px}.field select,.field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#0b1526;color:var(--text)}.switchrow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}.switchrow:last-child{border:0}.switchrow small{display:block;color:var(--muted)}input[type=checkbox]{width:19px;height:19px;accent-color:var(--accent)}
+.btn{border:1px solid var(--line);background:#17263e;color:var(--text);padding:10px 15px;border-radius:10px;font-weight:700;cursor:pointer}.primary{background:var(--accent);border-color:transparent;color:#071326}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.notice{border:1px solid #725b32;background:#302817;color:#ffdda0;border-radius:12px;padding:13px;margin:18px 0}.hidden{display:none}.savebar{position:sticky;bottom:12px;background:#0d1728;border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);padding:9px;overflow:auto}.nav{display:flex;min-width:max-content}.nav a{padding:8px 11px}main{padding:22px 16px}.cards{grid-template-columns:1fr}.fieldgrid{grid-template-columns:1fr}header{padding:0 14px}}
+</style></head>
+<body>
+<header><a class="brand" href="./">VEXORA <span>BOT</span></a><a class="btn" href="./">Zur Website</a></header>
+<div class="layout">
+<aside><nav class="nav">
+<a class="active" href="#overview">Übersicht</a><a href="#setup">Server-Einrichtung</a><a href="#logs">Logs & Kanäle</a><a href="#protection">Schutzsysteme</a><a href="#team">Team & Rechte</a>
+</nav></aside>
+<main>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><p class="muted" style="margin:0 0 5px">VEXORA CONTROL CENTER</p><h1>Dashboard</h1><p class="muted">Verwalte VEXORA-Einstellungen für deinen Discord-Server.</p></div><span class="status"><i class="dot"></i> Verbindung noch nicht eingerichtet</span></div>
+<div class="notice" id="connectionNotice"><b>Vorschau-Modus:</b> Dieses Dashboard ist bereits bedienbar. Deine Änderungen werden vorerst nur als lokaler Entwurf in diesem Browser gespeichert. Discord-Anmeldung und echte Synchronisierung mit Bot und Datenbank sind noch nicht verbunden.</div>
+<section id="overview" class="cards">
+<div class="card"><div class="muted">Bot-Verbindung</div><div class="metric">Nicht verbunden</div><small class="muted">OAuth-Verbindung steht noch aus</small></div>
+<div class="card"><div class="muted">Server</div><div class="metric" id="serverMetric">Nicht gewählt</div><small class="muted">Serverauswahl nach Anmeldung</small></div>
+<div class="card"><div class="muted">Konfiguration</div><div class="metric" id="configMetric">Entwurf</div><small class="muted">Lokal auf diesem Gerät</small></div>
+</section>
+<section class="section" id="setup"><h2>🏠 Server-Einrichtung</h2><p>Nach der Discord-Anmeldung erscheint hier die Liste der Server, auf denen du VEXORA verwalten darfst.</p><div class="fieldgrid"><div class="field"><label for="serverName">Servername (Vorschau)</label><input id="serverName" placeholder="Wird nach Discord-Anmeldung geladen"></div><div class="field"><label for="timezone">Zeitzone</label><select id="timezone"><option value="Europe/Berlin">Europa/Berlin</option><option value="UTC">UTC</option></select></div></div></section>
+<section class="section" id="logs"><h2>📋 Logs & Kanäle</h2><p>Wähle, wohin VEXORA Ereignisse und Meldungen senden soll. Echte Kanallisten werden nach der sicheren Discord-Verbindung geladen.</p><div class="fieldgrid">
+<div class="field"><label for="logChannel">Moderations-Logs</label><input id="logChannel" placeholder="Discord-Kanal auswählen (folgt nach OAuth)"></div>
+<div class="field"><label for="welcomeChannel">Willkommenskanal</label><input id="welcomeChannel" placeholder="Discord-Kanal auswählen (folgt nach OAuth)"></div>
+<div class="field"><label for="goodbyeChannel">Abschiedskanal</label><input id="goodbyeChannel" placeholder="Discord-Kanal auswählen (folgt nach OAuth)"></div>
+<div class="field"><label for="funkChannel">Funkkanal</label><input id="funkChannel" placeholder="Discord-Kanal auswählen (folgt nach OAuth)"></div></div></section>
+<section class="section" id="protection"><h2>🛡️ Schutzsysteme</h2><p>Schalte die Module für diesen Server ein oder aus. Die Schalter sind im Vorschau-Modus noch nicht mit dem Bot verbunden.</p>
+<div class="switchrow"><div><b>Moderations-Logs</b><small>Wichtige Moderationsaktionen protokollieren</small></div><input type="checkbox" id="logsEnabled" checked></div>
+<div class="switchrow"><div><b>Nachrichtenfilter</b><small>Verdächtige Begriffe zur Teamprüfung melden</small></div><input type="checkbox" id="filterEnabled"></div>
+<div class="switchrow"><div><b>Spam-Schutz</b><small>Wiederholte Nachrichten erkennen</small></div><input type="checkbox" id="spamEnabled"></div>
+<div class="switchrow"><div><b>Raid-Schutz</b><small>Ungewöhnlich viele Beitritte erkennen</small></div><input type="checkbox" id="raidEnabled"></div>
+<div class="switchrow"><div><b>Willkommensnachricht</b><small>Neue Mitglieder begrüßen</small></div><input type="checkbox" id="welcomeEnabled"></div></section>
+<section class="section" id="team"><h2>👥 Team & Rechte</h2><p>Interne VEXORA-Moderatoren und Discord-Berechtigungen werden getrennt verwaltet. Die endgültigen Rechte werden serverseitig geprüft.</p><div class="fieldgrid">
+<div class="field"><label for="moderatorRole">Discord-Moderatorrolle (ID, Vorschau)</label><input id="moderatorRole" placeholder="Wird nach OAuth auswählbar"></div>
+<div class="field"><label for="promotePermission">Wer darf /promote und /demote?</label><select id="promotePermission"><option value="manage_roles">Mitglieder mit „Rollen verwalten“</option><option value="administrator">Nur Administratoren</option></select></div></div></section>
+<div class="savebar"><span class="muted" id="saveStatus">Noch nicht gespeichert</span><div class="actions" style="margin:0"><button class="btn" id="resetBtn">Zurücksetzen</button><button class="btn primary" id="saveBtn">Entwurf speichern</button></div></div>
+</main></div>
+<script>
+const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission"];
+const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles"};
+const status=document.getElementById("saveStatus");
+function read(){const data={};for(const id of ids){const el=document.getElementById(id);data[id]=el.type==="checkbox"?el.checked:el.value;}return data;}
+function apply(data){for(const id of ids){const el=document.getElementById(id);if(data[id]!==undefined){if(el.type==="checkbox")el.checked=Boolean(data[id]);else el.value=data[id];}}}
+function refresh(){document.getElementById("configMetric").textContent="Entwurf";const n=document.getElementById("serverName").value.trim();document.getElementById("serverMetric").textContent=n||"Nicht gewählt";}
+try{const saved=JSON.parse(localStorage.getItem("vexora-dashboard-draft")||"null");if(saved)apply(saved);else apply(defaults);}catch{apply(defaults);}
+document.getElementById("saveBtn").addEventListener("click",()=>{try{localStorage.setItem("vexora-dashboard-draft",JSON.stringify(read()));status.textContent="Entwurf auf diesem Gerät gespeichert";refresh();}catch{status.textContent="Speichern in diesem Browser nicht möglich";}});
+document.getElementById("resetBtn").addEventListener("click",()=>{localStorage.removeItem("vexora-dashboard-draft");apply(defaults);status.textContent="Entwurf zurückgesetzt";refresh();});
+document.getElementById("serverName").addEventListener("input",refresh);refresh();
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+</script></body></html>

@@ -2,7 +2,7 @@ import "dotenv/config";
 import {
   Client, Events, GatewayIntentBits, MessageFlags, PermissionsBitField, EmbedBuilder
 } from "discord.js";
-import { hasStaffRole, isOwner, isModerator, canManageTarget } from "./security/permissions.js";
+import { hasStaffRole, isOwner, isModerator, isDispatcher, canManageTarget } from "./security/permissions.js";
 import { registerCommands } from "./commands/register.js";
 import { attachMessageScanner } from "./moderation/messageScanner.js";
 import { handleModerationButton } from "./moderation/actions.js";
@@ -10,6 +10,7 @@ import { attachLogging } from "./events/logging.js";
 import { getGuildEnv } from "./config/guildConfig.js";
 import { attachActivityGuard } from "./moderation/activityGuard.js";
 import { attachGlobalWarningAlerts, createGlobalWarning, isGlobalBotModerator } from "./moderation/globalWarnings.js";
+import { callDutyRpc, getJobDefinition, formatDuration } from "./economy/duty.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID"];
 const missing = required.filter(key => !process.env[key]);
@@ -49,8 +50,8 @@ attachLogging(client);
 attachActivityGuard(client);
 attachGlobalWarningAlerts(client);
 
-const factionEnv = { police: "POLICE_ROLE_ID", ems: "EMS_ROLE_ID", fire: "FIRE_ROLE_ID" };
-const factionNames = { police: "Polizei", ems: "Rettungsdienst", fire: "Feuerwehr" };
+const factionEnv = { police: "POLICE_ROLE_ID", ems: "EMS_ROLE_ID", fire: "FIRE_ROLE_ID", trucker: "TRUCKER_ROLE_ID" };
+const factionNames = { police: "Polizei", ems: "Rettungsdienst", fire: "Feuerwehr", trucker: "LKW-Fahrer" };
 const logAction = async (guild, title, description) => {
   const env = await getGuildEnv(guild.id);
   if (env.VEXORA_LOGS_ENABLED !== "true") return;
@@ -64,6 +65,36 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton() && await handleModerationButton(interaction)) return;
     if (!interaction.isChatInputCommand()) return;
     const name = interaction.commandName;
+    if (["job", "einstempeln", "ausstempeln", "balance"].includes(name)) {
+      if (!interaction.guildId) return reply(interaction, "Das Wirtschaftssystem funktioniert nur innerhalb eines Discord-Servers.");
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const baseArgs = { p_guild_id: interaction.guildId, p_user_id: interaction.user.id };
+      const finish = content => interaction.editReply({ content });
+
+      if (name === "job" || name === "balance") {
+        const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
+        if (!profile.has_job) {
+          return finish(name === "job"
+            ? "Du hast noch keinen Beruf. Die Leitstelle muss dich zuerst mit **/einstellen** einstellen."
+            : "Du hast noch keinen Beruf und deshalb noch kein VEXORA-Konto.");
+        }
+        if (name === "balance") {
+          return finish(`Dein Kontostand auf **diesem Server** beträgt **${profile.balance} € Spielgeld**.`);
+        }
+        const dutyText = profile.on_duty
+          ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
+          : "Aktuell nicht im Dienst";
+        const activeText = profile.is_active ? "Beruf aktiv" : "Beruf inaktiv – bitte an die Leitstelle wenden";
+        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\nKontostand: **${profile.balance} € Spielgeld**\n${activeText}\n${dutyText}`);
+      }
+      if (name === "einstempeln") {
+        const result = await callDutyRpc("vexora_start_shift", baseArgs);
+        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
+      }
+      const result = await callDutyRpc("vexora_end_shift", baseArgs);
+      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Spielgeld**\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
+    }
+
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
     const guildEnv = interaction.guildId ? await getGuildEnv(interaction.guildId) : process.env;
 
@@ -89,6 +120,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     if (name === "vexora-hilfe") {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle("VEXORA Bot – Hilfe").setDescription([
+        "**Wirtschaft:** /job, /einstempeln, /ausstempeln, /balance",
         "**Moderation:** /warn, /kick, /ban, /clear",
         "**Globale Moderation:** /bot warn",
         "**Personal:** /promote, /demote, /einstellen, /feuern",
@@ -111,8 +143,11 @@ client.on(Events.InteractionCreate, async interaction => {
       return reply(interaction, "Funkmeldung wurde gesendet.");
     }
 
-    const staffOnly = ["kick","ban","warn","clear","promote","demote","einstellen","feuern"];
+    const staffOnly = ["kick","ban","warn","clear","promote","demote"];
     if (staffOnly.includes(name) && !isModerator(member, guildEnv)) return reply(interaction, "Zugriff verweigert: Du brauchst eine konfigurierte Owner- oder Moderator-Rolle.");
+    if (["einstellen","feuern"].includes(name) && !isDispatcher(interaction.user.id)) {
+      return reply(interaction, "Nur die ausdrücklich konfigurierte Leitstelle darf Roleplay-Mitarbeiter einstellen oder entlassen.");
+    }
     if (["promote", "demote"].includes(name)) {
       const requiredPermission = guildEnv.PROMOTE_PERMISSION === "administrator" ? PermissionsBitField.Flags.Administrator : PermissionsBitField.Flags.ManageRoles;
       if (!member?.permissions?.has(requiredPermission)) return reply(interaction, guildEnv.PROMOTE_PERMISSION === "administrator" ? "Nur Administratoren dürfen diese Aktion ausführen." : "Du brauchst die Discord-Berechtigung Rollen verwalten.");
@@ -123,7 +158,11 @@ client.on(Events.InteractionCreate, async interaction => {
       const target = await interaction.guild.members.fetch(user.id).catch(() => null);
       if (!target) return reply(interaction, "Mitglied wurde auf diesem Server nicht gefunden.");
       const botMember = interaction.guild.members.me;
-      if (!canManageTarget(member, target, botMember)) return reply(interaction, "Sicherheitsstopp: Dieses Mitglied steht auf gleicher/höherer Rollenebene oder kann nicht verwaltet werden.");
+      const employmentAction = ["einstellen","feuern"].includes(name);
+      if (!employmentAction && !canManageTarget(member, target, botMember)) return reply(interaction, "Sicherheitsstopp: Dieses Mitglied steht auf gleicher/höherer Rollenebene oder kann nicht verwaltet werden.");
+      if (employmentAction && (target.id === interaction.user.id || target.id === interaction.guild.ownerId || botMember.roles.highest.comparePositionTo(target.roles.highest) <= 0)) {
+        return reply(interaction, "Sicherheitsstopp: Dieses Mitglied kann durch die Leitstelle nicht verwaltet werden.");
+      }
       if (name === "ban" && !isOwner(member, guildEnv)) return reply(interaction, "Bannen ist nur Ownern erlaubt.");
 
       if (name === "kick" || name === "ban") {
@@ -156,8 +195,36 @@ client.on(Events.InteractionCreate, async interaction => {
         if (!roleId) return reply(interaction, `Die Rolle für ${factionNames[faction]} ist noch nicht konfiguriert.`);
         const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
         if (!role || role.managed || botMember.roles.highest.comparePositionTo(role) <= 0) return reply(interaction, "Die Fraktionsrolle fehlt oder liegt über der Bot-Rolle.");
-        if (name === "einstellen") await target.roles.add(role, `Einstellung in ${factionNames[faction]} durch ${interaction.user.tag}`);
-        else await target.roles.remove(role, `Entlassung aus ${factionNames[faction]} durch ${interaction.user.tag}`);
+        if (!botMember.permissions.has(PermissionsBitField.Flags.ManageRoles)) return reply(interaction, "Dem Bot fehlt die Berechtigung Rollen verwalten.");
+        const hadRole = target.roles.cache.has(role.id);
+
+        if (name === "einstellen") {
+          if (!hadRole) await target.roles.add(role, `Einstellung in ${factionNames[faction]} durch ${interaction.user.tag}`);
+          try {
+            const definition = getJobDefinition(faction);
+            await callDutyRpc("vexora_choose_job", {
+              p_guild_id: interaction.guildId, p_user_id: user.id,
+              p_job: faction, p_hourly_rate: definition.hourlyRate
+            });
+          } catch (error) {
+            if (!hadRole) await target.roles.remove(role, "VEXORA: Einstellung wegen Datenbankfehler zurückgerollt.").catch(() => null);
+            return reply(interaction, `Einstellung nicht gespeichert: ${String(error.message).slice(0,250)}`);
+          }
+        } else {
+          try {
+            const current = await callDutyRpc("vexora_get_job_profile", {
+              p_guild_id: interaction.guildId, p_user_id: user.id
+            });
+            if (!current.has_job || current.job !== faction) {
+              return reply(interaction, `Diese Person ist nicht bei ${factionNames[faction]} eingestellt.`);
+            }
+            await callDutyRpc("vexora_deactivate_job", { p_guild_id: interaction.guildId, p_user_id: user.id });
+          } catch (error) {
+            return reply(interaction, `Entlassung nicht möglich: ${String(error.message).slice(0,250)}`);
+          }
+          if (hadRole) await target.roles.remove(role, `Entlassung aus ${factionNames[faction]} durch ${interaction.user.tag}`);
+        }
+
         await logAction(interaction.guild, name === "einstellen" ? "Fraktionseinstellung" : "Fraktionsentlassung", `Mitglied: <@${user.id}>\nFraktion: ${factionNames[faction]}\nDurch: <@${interaction.user.id}>`);
         return reply(interaction, `${user.tag} wurde ${name === "einstellen" ? "eingestellt" : "entlassen"}: ${factionNames[faction]}.`);
       }
@@ -173,8 +240,21 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   } catch (error) {
     console.error("VEXORA: Interaktion fehlgeschlagen:", error);
-    const message = "Die Aktion ist fehlgeschlagen. Prüfe Bot-Rechte, Rollenreihenfolge und Konfiguration.";
-    if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) await reply(interaction, message).catch(() => null);
+    const knownErrors = [
+      "Du bist bereits eingestempelt.",
+      "Du bist aktuell nicht eingestempelt.",
+      "Die Leitstelle muss dich zuerst einstellen.",
+      "Dein Beruf ist derzeit nicht aktiv.",
+      "Die Person ist noch im Dienst und muss sich zuerst ausstempeln.",
+      "Diese Person hat bereits einen anderen Beruf. Umschulung wird später ergänzt.",
+      "Für diese Person ist kein Beruf hinterlegt."
+    ];
+    const message = knownErrors.find(text => String(error.message).includes(text))
+      || (String(error.message).includes("SUPABASE_URL")
+        ? "Die sichere Datenbankverbindung des Bots ist noch nicht eingerichtet."
+        : "Die Aktion ist fehlgeschlagen. Prüfe Bot-Rechte, Rollenreihenfolge und Konfiguration.");
+    if (interaction.isRepliable() && interaction.deferred) await interaction.editReply({ content: message }).catch(() => null);
+    else if (interaction.isRepliable() && !interaction.replied) await reply(interaction, message).catch(() => null);
     else if (interaction.isRepliable()) await interaction.followUp({ content: message, flags: MessageFlags.Ephemeral }).catch(() => null);
   }
 });

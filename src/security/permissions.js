@@ -36,3 +36,8 @@ export function canManageTarget(actor, target, botMember) {
   if (botMember.roles.highest.comparePositionTo(target.roles.highest) <= 0) return false;
   return true;
 }
+
+/** Only explicitly configured Discord user IDs may manage roleplay employment. */
+export function isDispatcher(userId, env = process.env) {
+  return getConfiguredRoleIds(env.VEXORA_DISPATCHER_IDS).has(userId);
+}

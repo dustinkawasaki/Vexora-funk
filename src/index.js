@@ -79,20 +79,20 @@ client.on(Events.InteractionCreate, async interaction => {
             : "Du hast noch keinen Beruf und deshalb noch kein VEXORA-Konto.");
         }
         if (name === "balance") {
-          return finish(`Dein Kontostand auf **diesem Server** beträgt **${profile.balance} € Euro**.`);
+          return finish(`Dein Kontostand auf **diesem Server** beträgt **${profile.balance} €**.`);
         }
         const dutyText = profile.on_duty
           ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
           : "Aktuell nicht im Dienst";
         const activeText = profile.is_active ? "Beruf aktiv" : "Beruf inaktiv – bitte an die Leitstelle wenden";
-        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Euro**\nKontostand: **${profile.balance} € Euro**\n${activeText}\n${dutyText}`);
+        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} €**\nKontostand: **${profile.balance} €**\n${activeText}\n${dutyText}`);
       }
       if (name === "einstempeln") {
         const result = await callDutyRpc("vexora_start_shift", baseArgs);
-        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Euro**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
+        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} €**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
       }
       const result = await callDutyRpc("vexora_end_shift", baseArgs);
-      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Euro**\nNeuer Kontostand: **${result.balance} € Euro**`);
+      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} €**\nNeuer Kontostand: **${result.balance} €**`);
     }
 
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);

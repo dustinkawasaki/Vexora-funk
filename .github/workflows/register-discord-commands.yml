@@ -1,0 +1,39 @@
+name: VEXORA release and Discord command registration
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check JavaScript syntax
+        run: npm run check
+
+      - name: Register current VEXORA slash commands
+        env:
+          VEXORA_SETUP_SECRET: ${{ secrets.VEXORA_SETUP_SECRET }}
+        run: |
+          if [ -z "$VEXORA_SETUP_SECRET" ]; then
+            echo "::error::GitHub repository secret VEXORA_SETUP_SECRET is missing."
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --url "https://vexora-discord.dustinleon11.workers.dev/setup/register" \
+            --header "X-Setup-Secret: $VEXORA_SETUP_SECRET"

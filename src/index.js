@@ -238,10 +238,10 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     if (name === "vexora-hilfe") {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle("VEXORA Bot – Hilfe").setDescription([
-        "**Wirtschaft:** /job, /einstempeln, /ausstempeln, /balance",
+        "**Wirtschaft:** /job, /einstempeln, /ausstempeln, /balance, /kündigen",
         "**Moderation:** /warn, /kick, /ban, /clear",
         "**Globale Moderation:** /bot warn",
-        "**Personal:** /promote, /demote, /einstellen, /feuern",
+        "**Personal:** /promote, /demote, /einstellen (Berufsangebot per DM), /feuern",
         "**Fraktionen & Funk:** /fraktion, /funk",
         "**Status:** /vexora-status"
       ].join("\n"))], flags: MessageFlags.Ephemeral });

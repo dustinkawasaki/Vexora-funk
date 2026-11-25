@@ -212,6 +212,12 @@ client.on(Events.InteractionCreate, async interaction => {
           }
         } else {
           try {
+            const current = await callDutyRpc("vexora_get_job_profile", {
+              p_guild_id: interaction.guildId, p_user_id: user.id
+            });
+            if (!current.has_job || current.job !== faction) {
+              return reply(interaction, `Diese Person ist nicht bei ${factionNames[faction]} eingestellt.`);
+            }
             await callDutyRpc("vexora_deactivate_job", { p_guild_id: interaction.guildId, p_user_id: user.id });
           } catch (error) {
             return reply(interaction, `Entlassung nicht möglich: ${String(error.message).slice(0,250)}`);

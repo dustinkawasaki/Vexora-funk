@@ -240,8 +240,21 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   } catch (error) {
     console.error("VEXORA: Interaktion fehlgeschlagen:", error);
-    const message = "Die Aktion ist fehlgeschlagen. Prüfe Bot-Rechte, Rollenreihenfolge und Konfiguration.";
-    if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) await reply(interaction, message).catch(() => null);
+    const knownErrors = [
+      "Du bist bereits eingestempelt.",
+      "Du bist aktuell nicht eingestempelt.",
+      "Die Leitstelle muss dich zuerst einstellen.",
+      "Dein Beruf ist derzeit nicht aktiv.",
+      "Die Person ist noch im Dienst und muss sich zuerst ausstempeln.",
+      "Diese Person hat bereits einen anderen Beruf. Umschulung wird später ergänzt.",
+      "Für diese Person ist kein Beruf hinterlegt."
+    ];
+    const message = knownErrors.find(text => String(error.message).includes(text))
+      || (String(error.message).includes("SUPABASE_URL")
+        ? "Die sichere Datenbankverbindung des Bots ist noch nicht eingerichtet."
+        : "Die Aktion ist fehlgeschlagen. Prüfe Bot-Rechte, Rollenreihenfolge und Konfiguration.");
+    if (interaction.isRepliable() && interaction.deferred) await interaction.editReply({ content: message }).catch(() => null);
+    else if (interaction.isRepliable() && !interaction.replied) await reply(interaction, message).catch(() => null);
     else if (interaction.isRepliable()) await interaction.followUp({ content: message, flags: MessageFlags.Ephemeral }).catch(() => null);
   }
 });

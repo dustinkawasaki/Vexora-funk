@@ -10,6 +10,7 @@ import { attachLogging } from "./events/logging.js";
 import { getGuildEnv } from "./config/guildConfig.js";
 import { attachActivityGuard } from "./moderation/activityGuard.js";
 import { attachGlobalWarningAlerts, createGlobalWarning, isGlobalBotModerator } from "./moderation/globalWarnings.js";
+import { callDutyRpc, getJobDefinition, formatDuration } from "./economy/duty.js";
 
 const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID"];
 const missing = required.filter(key => !process.env[key]);
@@ -64,6 +65,38 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton() && await handleModerationButton(interaction)) return;
     if (!interaction.isChatInputCommand()) return;
     const name = interaction.commandName;
+    if (["job", "einstempeln", "ausstempeln", "balance"].includes(name)) {
+      if (!interaction.guildId) return reply(interaction, "Das Wirtschaftssystem funktioniert nur innerhalb eines Discord-Servers.");
+      const baseArgs = { p_guild_id: interaction.guildId, p_user_id: interaction.user.id };
+      if (name === "job") {
+        if (interaction.options.getSubcommand() === "waehlen") {
+          const selectedJob = interaction.options.getString("beruf", true);
+          const definition = getJobDefinition(selectedJob);
+          const profile = await callDutyRpc("vexora_choose_job", {
+            ...baseArgs, p_job: selectedJob, p_hourly_rate: definition.hourlyRate
+          });
+          return reply(interaction, `Dein Beruf ist **${definition.label}**. Stundenlohn: **${profile.hourly_rate} € Spielgeld**. Du kannst aktuell nur einen Beruf haben; Umschulung wird später ergänzt.`);
+        }
+        const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
+        if (!profile.has_job) return reply(interaction, "Du hast noch keinen Beruf. Wähle einen mit **/job waehlen**.");
+        const dutyText = profile.on_duty
+          ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
+          : "Aktuell nicht im Dienst";
+        return reply(interaction, `**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\nKontostand: **${profile.balance} € Spielgeld**\n${dutyText}`);
+      }
+      if (name === "einstempeln") {
+        const result = await callDutyRpc("vexora_start_shift", baseArgs);
+        return reply(interaction, `Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
+      }
+      const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
+      if (!profile.has_job) return reply(interaction, "Du hast noch keinen Beruf. Wähle zuerst einen mit **/job waehlen**.");
+      if (name === "balance") {
+        return reply(interaction, `Dein Kontostand auf **diesem Server** beträgt **${profile.balance} € Spielgeld**.`);
+      }
+      const result = await callDutyRpc("vexora_end_shift", baseArgs);
+      return reply(interaction, `Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Spielgeld**\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
+    }
+
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
     const guildEnv = interaction.guildId ? await getGuildEnv(interaction.guildId) : process.env;
 
@@ -75,7 +108,7 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         const userId = interaction.options.getString("discord_id", true).trim();
         const reason = interaction.options.getString("grund", true).trim();
-        if (!/^\d{17,20}$/.test(userId)) return reply(interaction, "Bitte gib eine gültige Discord-ID mit 17 bis 20 Ziffern ein.");
+        if (!/^\\d{17,20}$/.test(userId)) return reply(interaction, "Bitte gib eine gültige Discord-ID mit 17 bis 20 Ziffern ein.");
         if (!reason || reason.length > 400) return reply(interaction, "Der Grund muss zwischen 1 und 400 Zeichen lang sein.");
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const warning = await createGlobalWarning({ userId, guildId: interaction.guildId, reason, issuedBy: interaction.user.id });
@@ -89,19 +122,20 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     if (name === "vexora-hilfe") {
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x2878ff).setTitle("VEXORA Bot – Hilfe").setDescription([
+        "**Wirtschaft:** /job, /einstempeln, /ausstempeln, /balance",
         "**Moderation:** /warn, /kick, /ban, /clear",
         "**Globale Moderation:** /bot warn",
         "**Personal:** /promote, /demote, /einstellen, /feuern",
         "**Fraktionen & Funk:** /fraktion, /funk",
         "**Status:** /vexora-status"
-      ].join("\n"))], flags: MessageFlags.Ephemeral });
+      ].join("\\n"))], flags: MessageFlags.Ephemeral });
     }
     if (name === "fraktion") {
       const lines = Object.entries(factionEnv).map(([key, envKey]) => {
         const roleId = guildEnv[envKey];
         return `**${factionNames[key]}:** ${roleId ? `<@&${roleId}>` : "Noch nicht konfiguriert"}`;
       });
-      return reply(interaction, lines.join("\n"));
+      return reply(interaction, lines.join("\\n"));
     }
     if (name === "funk") {
       if (!isModerator(member, guildEnv)) return reply(interaction, "Dafür brauchst du eine konfigurierte Owner- oder Moderator-Rolle.");

@@ -1,4 +1,5 @@
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
+import { getGuildSettings } from "../config/guildConfig.js";
 
 const factionChoices = [
   { name: "Polizei", value: "police" },
@@ -50,7 +51,11 @@ export async function registerCommands({ token, clientId, guildIds }) {
   const ids = [...new Set((guildIds || []).filter(Boolean))];
   if (!ids.length) throw new Error("Keine Discord-Server zum Registrieren der Slash-Befehle gefunden.");
   const rest = new REST({ version: "10" }).setToken(token);
-  const body = commands.map(command => command.toJSON());
-  for (const guildId of ids) await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body });
+  for (const guildId of ids) {
+    const settings = await getGuildSettings(guildId);
+    const body = commands.map(command => command.toJSON());
+    if (settings.setupCommandEnabled === true) body.push(new SlashCommandBuilder().setName("setup").setDescription("Einmalige Server-Einrichtung für VEXORA.").addSubcommand(sub => sub.setName("leitstelle").setDescription("Wählt die Discord-Rolle der Leitstelle aus.").addRoleOption(option => option.setName("rolle").setDescription("Leitstellen-Rolle").setRequired(true))).toJSON());
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body });
+  }
   console.log(`VEXORA: Slash-Commands in ${ids.length} Server(n) registriert.`);
 }

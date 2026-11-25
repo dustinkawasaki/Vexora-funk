@@ -37,7 +37,9 @@ export function canManageTarget(actor, target, botMember) {
   return true;
 }
 
-/** Only explicitly configured Discord user IDs may manage roleplay employment. */
-export function isDispatcher(userId, env = process.env) {
-  return getConfiguredRoleIds(env.VEXORA_DISPATCHER_IDS).has(userId);
+/** Only members with a configured Leitstelle role may use dispatch commands. */
+export function isDispatcher(member, env = process.env) {
+  if (!member?.roles?.cache) return false;
+  const ids = getConfiguredRoleIds(env.VEXORA_DISPATCHER_ROLE_IDS);
+  return member.roles.cache.some((role) => ids.has(role.id));
 }

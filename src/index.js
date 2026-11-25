@@ -67,7 +67,10 @@ client.on(Events.InteractionCreate, async interaction => {
     const name = interaction.commandName;
     if (["job", "einstempeln", "ausstempeln", "balance"].includes(name)) {
       if (!interaction.guildId) return reply(interaction, "Das Wirtschaftssystem funktioniert nur innerhalb eines Discord-Servers.");
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const baseArgs = { p_guild_id: interaction.guildId, p_user_id: interaction.user.id };
+      const finish = content => interaction.editReply({ content });
+
       if (name === "job") {
         if (interaction.options.getSubcommand() === "waehlen") {
           const selectedJob = interaction.options.getString("beruf", true);
@@ -75,26 +78,26 @@ client.on(Events.InteractionCreate, async interaction => {
           const profile = await callDutyRpc("vexora_choose_job", {
             ...baseArgs, p_job: selectedJob, p_hourly_rate: definition.hourlyRate
           });
-          return reply(interaction, `Dein Beruf ist **${definition.label}**. Stundenlohn: **${profile.hourly_rate} € Spielgeld**. Du kannst aktuell nur einen Beruf haben; Umschulung wird später ergänzt.`);
+          return finish(\`Dein Beruf ist **\${definition.label}**. Stundenlohn: **\${profile.hourly_rate} € Spielgeld**. Du kannst aktuell nur einen Beruf haben; Umschulung folgt später.\`);
         }
         const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
-        if (!profile.has_job) return reply(interaction, "Du hast noch keinen Beruf. Wähle einen mit **/job waehlen**.");
+        if (!profile.has_job) return finish("Du hast noch keinen Beruf. Wähle einen mit **/job waehlen**.");
         const dutyText = profile.on_duty
-          ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
+          ? \`Im Dienst seit <t:\${Math.floor(Date.parse(profile.started_at) / 1000)}:R>\`
           : "Aktuell nicht im Dienst";
-        return reply(interaction, `**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\nKontostand: **${profile.balance} € Spielgeld**\n${dutyText}`);
+        return finish(\`**\${getJobDefinition(profile.job)?.label || profile.job}** · Rang: \${profile.rank_name}\\nStundenlohn: **\${profile.hourly_rate} € Spielgeld**\\nKontostand: **\${profile.balance} € Spielgeld**\\n\${dutyText}\`);
       }
       if (name === "einstempeln") {
         const result = await callDutyRpc("vexora_start_shift", baseArgs);
-        return reply(interaction, `Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
+        return finish(\`Du bist jetzt als **\${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **\${result.hourly_rate} € Spielgeld**.\\nDienstbeginn: <t:\${Math.floor(Date.parse(result.started_at) / 1000)}:F>\`);
       }
-      const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
-      if (!profile.has_job) return reply(interaction, "Du hast noch keinen Beruf. Wähle zuerst einen mit **/job waehlen**.");
       if (name === "balance") {
-        return reply(interaction, `Dein Kontostand auf **diesem Server** beträgt **${profile.balance} € Spielgeld**.`);
+        const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
+        if (!profile.has_job) return finish("Du hast noch keinen Beruf und deshalb noch kein VEXORA-Konto.");
+        return finish(\`Dein Kontostand auf **diesem Server** beträgt **\${profile.balance} € Spielgeld**.\`);
       }
       const result = await callDutyRpc("vexora_end_shift", baseArgs);
-      return reply(interaction, `Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Spielgeld**\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
+      return finish(\`Dienst beendet: **\${getJobDefinition(result.job)?.label || result.job}**\\nDienstzeit: **\${formatDuration(result.duration_minutes)}**\\nVerdient: **+\${result.earned} € Spielgeld**\\nNeuer Kontostand: **\${result.balance} € Spielgeld**\`);
     }
 
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);

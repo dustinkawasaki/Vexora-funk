@@ -85,14 +85,14 @@ client.on(Events.InteractionCreate, async interaction => {
           ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
           : "Aktuell nicht im Dienst";
         const activeText = profile.is_active ? "Beruf aktiv" : "Beruf inaktiv – bitte an die Leitstelle wenden";
-        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\\nKontostand: **${profile.balance} € Spielgeld**\\n${activeText}\\n${dutyText}`);
+        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\nKontostand: **${profile.balance} € Spielgeld**\n${activeText}\n${dutyText}`);
       }
       if (name === "einstempeln") {
         const result = await callDutyRpc("vexora_start_shift", baseArgs);
-        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
+        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
       }
       const result = await callDutyRpc("vexora_end_shift", baseArgs);
-      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\\nDienstzeit: **${formatDuration(result.duration_minutes)}**\\nVerdient: **+${result.earned} € Spielgeld**\\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
+      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Spielgeld**\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
     }
 
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
@@ -219,7 +219,7 @@ client.on(Events.InteractionCreate, async interaction => {
           if (hadRole) await target.roles.remove(role, `Entlassung aus ${factionNames[faction]} durch ${interaction.user.tag}`);
         }
 
-        await logAction(interaction.guild, name === "einstellen" ? "Fraktionseinstellung" : "Fraktionsentlassung", `Mitglied: <@${user.id}>\\nFraktion: ${factionNames[faction]}\\nDurch: <@${interaction.user.id}>`);
+        await logAction(interaction.guild, name === "einstellen" ? "Fraktionseinstellung" : "Fraktionsentlassung", `Mitglied: <@${user.id}>\nFraktion: ${factionNames[faction]}\nDurch: <@${interaction.user.id}>`);
         return reply(interaction, `${user.tag} wurde ${name === "einstellen" ? "eingestellt" : "entlassen"}: ${factionNames[faction]}.`);
       }
     }

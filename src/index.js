@@ -1,6 +1,7 @@
 import "dotenv/config";
 import {
-  Client, Events, GatewayIntentBits, MessageFlags, PermissionsBitField, EmbedBuilder
+  Client, Events, GatewayIntentBits, MessageFlags, PermissionsBitField, EmbedBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle
 } from "discord.js";
 import { hasStaffRole, isOwner, isModerator, isDispatcher, canManageTarget } from "./security/permissions.js";
 import { registerCommands } from "./commands/register.js";
@@ -62,9 +63,62 @@ const reply = (i, content) => i.reply({ content, flags: MessageFlags.Ephemeral }
 
 client.on(Events.InteractionCreate, async interaction => {
   try {
+    if (interaction.isButton() && interaction.customId.startsWith("vexquit:")) {
+      const [, action, guildId, userId] = interaction.customId.split(":");
+      if (interaction.user.id !== userId || interaction.guildId !== guildId) {
+        await interaction.reply({ content: "Diese Kündigungsaktion gehört einer anderen Person oder einem anderen Server.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      if (action === "cancel") {
+        await interaction.update({ content: "Kündigung abgebrochen. Dein Beruf bleibt bestehen.", components: [] });
+        return;
+      }
+      if (action === "confirm") {
+        await interaction.deferUpdate();
+        const guild = interaction.guild;
+        const member = await guild?.members.fetch(userId).catch(() => null);
+        if (!member) {
+          await interaction.editReply({ content: "Du bist auf diesem Server nicht mehr auffindbar.", components: [] });
+          return;
+        }
+        const profile = await callDutyRpc("vexora_get_job_profile", { p_guild_id: guildId, p_user_id: userId });
+        if (!profile.has_job || !profile.is_active) {
+          await interaction.editReply({ content: "Du hast aktuell keinen aktiven Beruf.", components: [] });
+          return;
+        }
+        if (profile.on_duty) {
+          await interaction.editReply({ content: "Du bist noch im Dienst. Bitte nutze zuerst **/ausstempeln** und bestätige danach deine Kündigung erneut.", components: [] });
+          return;
+        }
+        const env = await getGuildEnv(guildId);
+        const roleId = env[factionEnv[profile.job]];
+        const role = roleId ? await guild.roles.fetch(roleId).catch(() => null) : null;
+        await callDutyRpc("vexora_deactivate_job", { p_guild_id: guildId, p_user_id: userId });
+        if (role && member.roles.cache.has(role.id)) {
+          await member.roles.remove(role, "VEXORA: Spieler hat selbst gekündigt.");
+        }
+        await interaction.editReply({ content: `Deine Kündigung wurde bestätigt. Dein Beruf **${factionNames[profile.job] || profile.job}** ist beendet. Dein bisheriges Guthaben bleibt erhalten.`, components: [] });
+        await logAction(guild, "Eigenkündigung", `Mitglied: <@${userId}>\\nBeruf: ${factionNames[profile.job] || profile.job}\\nKontostand bleibt erhalten.`);
+        return;
+      }
+    }
     if (interaction.isButton() && await handleModerationButton(interaction)) return;
     if (!interaction.isChatInputCommand()) return;
     const name = interaction.commandName;
+    if (name === "kündigen") {
+      if (!interaction.guildId) return reply(interaction, "Diesen Befehl kannst du nur auf einem Discord-Server verwenden.");
+      const profile = await callDutyRpc("vexora_get_job_profile", { p_guild_id: interaction.guildId, p_user_id: interaction.user.id });
+      if (!profile.has_job || !profile.is_active) return reply(interaction, "Du hast aktuell keinen aktiven Beruf, den du kündigen könntest.");
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`vexquit:confirm:${interaction.guildId}:${interaction.user.id}`).setLabel("Ja, kündigen").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId(`vexquit:cancel:${interaction.guildId}:${interaction.user.id}`).setLabel("Abbrechen").setStyle(ButtonStyle.Secondary),
+      );
+      return interaction.reply({
+        content: `Möchtest du deinen Beruf **${factionNames[profile.job] || profile.job}** wirklich kündigen? Dein bisheriges Guthaben bleibt erhalten. Wenn du noch im Dienst bist, musst du dich zuerst mit **/ausstempeln** abmelden.`,
+        components: [row], flags: MessageFlags.Ephemeral
+      });
+    }
+
     if (["job", "einstempeln", "ausstempeln", "balance"].includes(name)) {
       if (!interaction.guildId) return reply(interaction, "Das Wirtschaftssystem funktioniert nur innerhalb eines Discord-Servers.");
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });

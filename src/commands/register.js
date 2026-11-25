@@ -12,6 +12,7 @@ const commands = [
   new SlashCommandBuilder().setName("einstempeln").setDescription("Beginnt deine Roleplay-Dienstzeit."),
   new SlashCommandBuilder().setName("ausstempeln").setDescription("Beendet deine Dienstzeit und zahlt deinen Lohn aus."),
   new SlashCommandBuilder().setName("balance").setDescription("Zeigt deinen VEXORA-Kontostand in Euro."),
+  new SlashCommandBuilder().setName("kündigen").setDescription("Kündigt deinen aktuellen Beruf nach deiner Bestätigung."),
   new SlashCommandBuilder().setName("kick").setDescription("Entfernt ein Mitglied vom Server.")
     .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
     .addStringOption(o => o.setName("grund").setDescription("Grund der Maßnahme").setMaxLength(400)),

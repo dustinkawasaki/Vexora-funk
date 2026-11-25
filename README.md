@@ -51,7 +51,6 @@ Diese Variablen müssen im privaten Host-Dashboard gesetzt werden:
 - `OWNER_ROLE_IDS` und optional `MODERATOR_ROLE_IDS`
 - optional `LOG_CHANNEL_ID`, `WELCOME_CHANNEL_ID`, `GOODBYE_CHANNEL_ID`, `FUNK_CHANNEL_ID`
 - optional `POLICE_ROLE_ID`, `EMS_ROLE_ID`, `FIRE_ROLE_ID`
-- optional `BLOCKED_TERMS` als Komma-getrennte Standardliste
 
 Die Slash-Befehle werden nach dem Start in allen Servern registriert, auf denen VEXORA installiert ist. Beim Hinzufügen des Bots zu einem weiteren Server werden sie dort ebenfalls registriert.
 

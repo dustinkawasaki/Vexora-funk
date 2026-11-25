@@ -74,4 +74,5 @@ document.getElementById("saveBtn").addEventListener("click",saveGuildConfig);
 document.getElementById("resetBtn").addEventListener("click",()=>{localStorage.removeItem("vexora-dashboard-draft");apply(defaults);status.textContent="Entwurf zurückgesetzt";document.getElementById("configMetric").textContent="Noch offen";refresh();});
 document.getElementById("serverName").addEventListener("change",()=>{const s=document.getElementById("serverName");document.getElementById("serverMetric").textContent=s.options[s.selectedIndex]?.text||"Nicht gewählt";loadGuildConfig();});refresh();if(new URLSearchParams(location.search).has("auth")){history.replaceState({},document.title,location.pathname);status.textContent=location.search.includes("success")?"Discord-Anmeldung erfolgreich":"Discord-Anmeldung fehlgeschlagen";}connectDiscord();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
-</script></body></html>
+</script>  <script src="./update.js" defer></script>
+</body></html>

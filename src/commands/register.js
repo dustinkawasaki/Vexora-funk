@@ -4,20 +4,11 @@ const factionChoices = [
   { name: "Polizei", value: "police" },
   { name: "Rettungsdienst", value: "ems" },
   { name: "Feuerwehr", value: "fire" },
-];
-const jobChoices = [
-  { name: "Polizei", value: "police" },
-  { name: "Feuerwehr", value: "fire" },
-  { name: "Rettungsdienst", value: "ems" },
   { name: "LKW-Fahrer", value: "trucker" },
 ];
-
 const commands = [
   new SlashCommandBuilder().setName("vexora-status").setDescription("Zeigt den Status von VEXORA Bot."),
-  new SlashCommandBuilder().setName("job").setDescription("Wählt deinen VEXORA-Roleplay-Beruf oder zeigt ihn an.")
-    .addSubcommand(sub => sub.setName("waehlen").setDescription("Wählt deinen Beruf (nur einmal, Umschulung folgt später).")
-      .addStringOption(o => o.setName("beruf").setDescription("Dein Beruf").setRequired(true).addChoices(...jobChoices)))
-    .addSubcommand(sub => sub.setName("status").setDescription("Zeigt Beruf, Rang, Stundenlohn und Dienststatus.")),
+  new SlashCommandBuilder().setName("job").setDescription("Zeigt deinen von der Leitstelle zugewiesenen Beruf und Dienststatus."),
   new SlashCommandBuilder().setName("einstempeln").setDescription("Beginnt deine Roleplay-Dienstzeit."),
   new SlashCommandBuilder().setName("ausstempeln").setDescription("Beendet deine Dienstzeit und zahlt dein Spielgeld aus."),
   new SlashCommandBuilder().setName("balance").setDescription("Zeigt dein VEXORA-Spielgeldkonto."),

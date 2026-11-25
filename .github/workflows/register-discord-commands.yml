@@ -29,8 +29,8 @@ jobs:
           VEXORA_SETUP_SECRET: ${{ secrets.VEXORA_SETUP_SECRET }}
         run: |
           if [ -z "$VEXORA_SETUP_SECRET" ]; then
-            echo "::error::GitHub repository secret VEXORA_SETUP_SECRET is missing."
-            exit 1
+            echo "::notice::VEXORA_SETUP_SECRET is not set; the Cloudflare Worker cron registers commands automatically every five minutes."
+            exit 0
           fi
 
           curl --fail-with-body --silent --show-error \

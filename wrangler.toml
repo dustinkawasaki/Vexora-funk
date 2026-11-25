@@ -1,0 +1,10 @@
+name = "vexora-discord"
+main = "worker.js"
+account_id = "3ede894929184a636be509debc6d8231"
+compatibility_date = "2026-11-25"
+workers_dev = true
+
+ai = { binding = "AI" }
+
+[triggers]
+crons = ["*/5 * * * *"]

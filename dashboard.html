@@ -37,14 +37,24 @@ header{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:
 <div class="switchrow"><div><b>Spam-Schutz</b><small>Wiederholte Nachrichten erkennen</small></div><input type="checkbox" id="spamEnabled"></div>
 <div class="switchrow"><div><b>Raid-Schutz</b><small>Ungewöhnlich viele Beitritte erkennen</small></div><input type="checkbox" id="raidEnabled"></div>
 <div class="switchrow"><div><b>Willkommensnachricht</b><small>Neue Mitglieder begrüßen</small></div><input type="checkbox" id="welcomeEnabled"></div></section>
+<section class="section" id="quarantine"><h2>🔒 Vorbereitung: Fake-Account-Quarantäne</h2><p>Hier kannst du die Regeln vorbereiten. <b>Wichtig:</b> Diese Werte speichern nur die Konfiguration. Automatisches Erkennen beim Beitritt und Zuweisen der Quarantäne-Rolle ist noch nicht aktiv, weil der aktuelle Cloudflare-Worker keine dauerhafte Discord-Gateway-Verbindung hat.</p>
+<div class="fieldgrid">
+<div class="field"><label for="minimumAccountAgeDays">Mindestalter eines Kontos (Tage)</label><input id="minimumAccountAgeDays" type="number" min="1" max="30" value="7"></div>
+<div class="field"><label for="quarantineDays">Quarantäne-Dauer (Tage)</label><input id="quarantineDays" type="number" min="1" max="30" value="7"></div>
+<div class="field"><label for="quarantineRole">Quarantäne-Rollen-ID</label><input id="quarantineRole" inputmode="numeric" placeholder="Discord-Rollen-ID"></div>
+<div class="field"><label for="quarantineChannel">Quarantäne-/Hinweis-Kanal-ID</label><input id="quarantineChannel" inputmode="numeric" placeholder="Discord-Kanal-ID (optional)"></div>
+</div>
+<div class="switchrow"><div><b>Private DM vorbereiten</b><small>Konfigurationswert für eine spätere Benachrichtigung</small></div><input type="checkbox" id="quarantineDmEnabled" checked></div>
+<div class="field" style="margin-top:12px"><label for="trustedUserIds">Vertrauenswürdige Discord-IDs (optional, Komma-getrennt)</label><input id="trustedUserIds" maxlength="1000" placeholder="ID1, ID2"></div>
+</section>
 <section class="section" id="team"><h2>👥 Team & Rechte</h2><p>Interne VEXORA-Moderatoren und Discord-Berechtigungen werden getrennt verwaltet. Die endgültigen Rechte werden serverseitig geprüft.</p><div class="fieldgrid">
 <div class="field"><label for="moderatorRole">Discord-Moderatorrolle (ID, Vorschau)</label><input id="moderatorRole" placeholder="Wird nach OAuth auswählbar"></div>
 <div class="field"><label for="promotePermission">Wer darf /promote und /demote?</label><select id="promotePermission"><option value="manage_roles">Mitglieder mit „Rollen verwalten“</option><option value="administrator">Nur Administratoren</option></select></div></div></section>
 <div class="savebar"><span class="muted" id="saveStatus">Noch nicht gespeichert</span><div class="actions" style="margin:0"><button class="btn" id="resetBtn">Zurücksetzen</button><button class="btn primary" id="saveBtn">Einstellungen speichern</button></div></div>
 </main></div>
 <script>
-const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission","blockedTerms"];
-const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles",blockedTerms:""};
+const ids=["serverName","timezone","logChannel","welcomeChannel","goodbyeChannel","funkChannel","logsEnabled","filterEnabled","spamEnabled","raidEnabled","welcomeEnabled","moderatorRole","promotePermission","blockedTerms","minimumAccountAgeDays","quarantineDays","quarantineRole","quarantineChannel","quarantineDmEnabled","trustedUserIds"];
+const defaults={timezone:"Europe/Berlin",logsEnabled:true,filterEnabled:false,spamEnabled:false,raidEnabled:false,welcomeEnabled:false,promotePermission:"manage_roles",blockedTerms:"",minimumAccountAgeDays:7,quarantineDays:7,quarantineRole:"",quarantineChannel:"",quarantineDmEnabled:true,trustedUserIds:""};
 const status=document.getElementById("saveStatus");
 const API="https://vexora-discord.dustinleon11.workers.dev";
 const SESSION_KEY="vexora-session";

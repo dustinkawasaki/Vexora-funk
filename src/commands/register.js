@@ -10,8 +10,8 @@ const commands = [
   new SlashCommandBuilder().setName("vexora-status").setDescription("Zeigt den Status von VEXORA Bot."),
   new SlashCommandBuilder().setName("job").setDescription("Zeigt deinen von der Leitstelle zugewiesenen Beruf und Dienststatus."),
   new SlashCommandBuilder().setName("einstempeln").setDescription("Beginnt deine Roleplay-Dienstzeit."),
-  new SlashCommandBuilder().setName("ausstempeln").setDescription("Beendet deine Dienstzeit und zahlt dein Spielgeld aus."),
-  new SlashCommandBuilder().setName("balance").setDescription("Zeigt dein VEXORA-Spielgeldkonto."),
+  new SlashCommandBuilder().setName("ausstempeln").setDescription("Beendet deine Dienstzeit und zahlt dein Euro aus."),
+  new SlashCommandBuilder().setName("balance").setDescription("Zeigt dein VEXORA-Eurokonto."),
   new SlashCommandBuilder().setName("kick").setDescription("Entfernt ein Mitglied vom Server.")
     .addUserOption(o => o.setName("mitglied").setDescription("Mitglied").setRequired(true))
     .addStringOption(o => o.setName("grund").setDescription("Grund der Maßnahme").setMaxLength(400)),

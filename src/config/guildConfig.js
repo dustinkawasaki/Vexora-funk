@@ -38,7 +38,6 @@ export async function getGuildEnv(guildId) {
     GOODBYE_CHANNEL_ID: settings.goodbyeChannel || process.env.GOODBYE_CHANNEL_ID || "",
     FUNK_CHANNEL_ID: settings.funkChannel || process.env.FUNK_CHANNEL_ID || "",
     MODERATOR_ROLE_IDS: settings.moderatorRole || process.env.MODERATOR_ROLE_IDS || "",
-    BLOCKED_TERMS: settings.blockedTerms || process.env.BLOCKED_TERMS || "",
     VEXORA_LOGS_ENABLED: settings.logsEnabled === false ? "false" : "true",
     VEXORA_FILTER_ENABLED: settings.filterEnabled === true ? "true" : "false",
     VEXORA_SPAM_ENABLED: settings.spamEnabled === true ? "true" : "false",

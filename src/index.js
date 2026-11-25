@@ -254,7 +254,7 @@ client.on(Events.InteractionCreate, async interaction => {
       return reply(interaction, lines.join("\n"));
     }
     if (name === "funk") {
-      if (!isModerator(member, guildEnv)) return reply(interaction, "Dafür brauchst du eine konfigurierte Owner- oder Moderator-Rolle.");
+      if (!isModerator(member, guildEnv) && !isDispatcher(member, guildEnv)) return reply(interaction, "Dafür brauchst du eine konfigurierte Leitstellen-, Owner- oder Moderator-Rolle.");
       const channel = guildEnv.FUNK_CHANNEL_ID ? await interaction.guild.channels.fetch(guildEnv.FUNK_CHANNEL_ID).catch(() => null) : null;
       if (!channel?.isTextBased()) return reply(interaction, "Der Funkkanal ist nicht eingerichtet. Bitte FUNK_CHANNEL_ID beim Hoster setzen.");
       await channel.send({ content: `📻 **VEXORA FUNK** · <@${interaction.user.id}>\n${interaction.options.getString("nachricht")}`, allowedMentions: { parse: [] } });
@@ -263,7 +263,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     const staffOnly = ["kick","ban","warn","clear","promote","demote"];
     if (staffOnly.includes(name) && !isModerator(member, guildEnv)) return reply(interaction, "Zugriff verweigert: Du brauchst eine konfigurierte Owner- oder Moderator-Rolle.");
-    if (["einstellen","feuern"].includes(name) && !isDispatcher(interaction.user.id)) {
+    if (["einstellen","feuern"].includes(name) && !isDispatcher(member, guildEnv)) {
       return reply(interaction, "Nur die ausdrücklich konfigurierte Leitstelle darf Roleplay-Mitarbeiter einstellen oder entlassen.");
     }
     if (["promote", "demote"].includes(name)) {

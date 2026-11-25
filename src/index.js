@@ -63,6 +63,64 @@ const reply = (i, content) => i.reply({ content, flags: MessageFlags.Ephemeral }
 
 client.on(Events.InteractionCreate, async interaction => {
   try {
+    if (interaction.isButton() && interaction.customId.startsWith("vexhire:")) {
+      const [, action, guildId, userId, job, expiresAt, dispatcherId] = interaction.customId.split(":");
+      if (interaction.user.id !== userId || interaction.guildId !== guildId) {
+        await interaction.reply({ content: "Dieses Berufsangebot gehört einer anderen Person oder einem anderen Server.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      if (!["police", "fire", "ems", "trucker"].includes(job) || !Number.isFinite(Number(expiresAt))) {
+        await interaction.reply({ content: "Dieses Berufsangebot ist ungültig.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      if (Date.now() > Number(expiresAt)) {
+        await interaction.update({ content: "Dieses Berufsangebot ist abgelaufen. Bitte wende dich an die Leitstelle.", components: [] });
+        return;
+      }
+      if (action === "reject") {
+        await interaction.update({ content: "Du hast das Berufsangebot abgelehnt. Es wurde keine Fraktionsrolle vergeben.", components: [] });
+        const dispatcher = await client.users.fetch(dispatcherId).catch(() => null);
+        await dispatcher?.send(`${interaction.user.tag} hat das Angebot für **${factionNames[job]}** abgelehnt.`).catch(() => null);
+        return;
+      }
+      if (action === "accept") {
+        await interaction.deferUpdate();
+        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        const member = await guild?.members.fetch(userId).catch(() => null);
+        if (!guild || !member) {
+          await interaction.editReply({ content: "Du bist auf diesem Server nicht mehr auffindbar. Bitte wende dich an die Leitstelle.", components: [] });
+          return;
+        }
+        const env = await getGuildEnv(guildId);
+        const roleId = env[factionEnv[job]];
+        const role = roleId ? await guild.roles.fetch(roleId).catch(() => null) : null;
+        const botMember = guild.members.me || await guild.members.fetchMe();
+        if (!role || role.managed || !botMember.permissions.has(PermissionsBitField.Flags.ManageRoles) || botMember.roles.highest.comparePositionTo(role) <= 0) {
+          await interaction.editReply({ content: "Die Fraktionsrolle ist momentan nicht korrekt eingerichtet. Die Leitstelle wurde nicht verändert.", components: [] });
+          return;
+        }
+        try {
+          const current = await callDutyRpc("vexora_get_job_profile", { p_guild_id: guildId, p_user_id: userId });
+          if (current.has_job && current.is_active) {
+            await interaction.editReply({ content: "Du hast inzwischen bereits einen aktiven Beruf. Dieses Angebot kann nicht mehr angenommen werden.", components: [] });
+            return;
+          }
+          await callDutyRpc("vexora_choose_job", {
+            p_guild_id: guildId, p_user_id: userId, p_job: job,
+            p_hourly_rate: getJobDefinition(job).hourlyRate
+          });
+          await member.roles.add(role, `Berufsangebot angenommen: ${factionNames[job]}`);
+        } catch (error) {
+          await interaction.editReply({ content: `Die Einstellung konnte nicht abgeschlossen werden: ${String(error.message).slice(0,180)}. Bitte wende dich an die Leitstelle.`, components: [] });
+          return;
+        }
+        await interaction.editReply({ content: `Du hast das Berufsangebot angenommen! Du bist jetzt **${factionNames[job]}**. Deine Fraktionsrolle wurde vergeben.`, components: [] });
+        await logAction(guild, "Berufsangebot angenommen", `Mitglied: <@${userId}>\\nBeruf: ${factionNames[job]}\\nAngebot durch: <@${dispatcherId}>`);
+        const dispatcher = await client.users.fetch(dispatcherId).catch(() => null);
+        await dispatcher?.send(`${interaction.user.tag} hat das Berufsangebot **${factionNames[job]}** angenommen.`).catch(() => null);
+        return;
+      }
+    }
     if (interaction.isButton() && interaction.customId.startsWith("vexquit:")) {
       const [, action, guildId, userId] = interaction.customId.split(":");
       if (interaction.user.id !== userId || interaction.guildId !== guildId) {
@@ -253,17 +311,32 @@ client.on(Events.InteractionCreate, async interaction => {
         const hadRole = target.roles.cache.has(role.id);
 
         if (name === "einstellen") {
-          if (!hadRole) await target.roles.add(role, `Einstellung in ${factionNames[faction]} durch ${interaction.user.tag}`);
           try {
-            const definition = getJobDefinition(faction);
-            await callDutyRpc("vexora_choose_job", {
-              p_guild_id: interaction.guildId, p_user_id: user.id,
-              p_job: faction, p_hourly_rate: definition.hourlyRate
+            const current = await callDutyRpc("vexora_get_job_profile", {
+              p_guild_id: interaction.guildId, p_user_id: user.id
             });
+            if (current.has_job && current.is_active) {
+              return reply(interaction, `${user.tag} hat bereits einen aktiven Beruf.`);
+            }
           } catch (error) {
-            if (!hadRole) await target.roles.remove(role, "VEXORA: Einstellung wegen Datenbankfehler zurückgerollt.").catch(() => null);
-            return reply(interaction, `Einstellung nicht gespeichert: ${String(error.message).slice(0,250)}`);
+            return reply(interaction, `Berufsstatus konnte nicht geprüft werden: ${String(error.message).slice(0,180)}`);
           }
+          const definition = getJobDefinition(faction);
+          const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+          const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`vexhire:accept:${interaction.guildId}:${user.id}:${faction}:${expiresAt}:${interaction.user.id}`).setLabel("Annehmen").setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId(`vexhire:reject:${interaction.guildId}:${user.id}:${faction}:${expiresAt}:${interaction.user.id}`).setLabel("Ablehnen").setStyle(ButtonStyle.Danger),
+          );
+          try {
+            await user.send({
+              content: `**VEXORA – Neues Berufsangebot**\\nDir wurde auf **${interaction.guild.name}** ein Berufsangebot gemacht.\\n\\n**Beruf:** ${factionNames[faction]}\\n**Stundenlohn:** ${definition.hourlyRate} €\\n**Gültig:** 24 Stunden\\n\\nMöchtest du diesen Beruf annehmen?`,
+              components: [row], allowedMentions: { parse: [] }
+            });
+          } catch {
+            return reply(interaction, `Ich konnte ${user.tag} keine DM senden. Bitte die Person, Direktnachrichten vom Server zu erlauben. Es wurde noch kein Beruf vergeben.`);
+          }
+          await logAction(interaction.guild, "Berufsangebot versendet", `Mitglied: <@${user.id}>\\nBeruf: ${factionNames[faction]}\\nAngebot durch: <@${interaction.user.id}>`);
+          return reply(interaction, `Berufsangebot für **${factionNames[faction]}** wurde an ${user.tag} per DM gesendet. Es wird erst nach Annahme eingestellt und ist 24 Stunden gültig.`);
         } else {
           try {
             const current = await callDutyRpc("vexora_get_job_profile", {

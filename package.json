@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js && node --check src/security/permissions.js && node --check src/commands/register.js && node --check src/events/logging.js && node --check src/moderation/messageScanner.js && node --check src/moderation/actions.js && node --check src/config/guildConfig.js && node --check src/moderation/activityGuard.js && node --check src/moderation/globalWarnings.js"
+    "check": "node --check src/index.js && node --check src/security/permissions.js && node --check src/commands/register.js && node --check src/events/logging.js && node --check src/moderation/messageScanner.js && node --check src/moderation/actions.js && node --check src/config/guildConfig.js && node --check src/moderation/activityGuard.js && node --check src/moderation/globalWarnings.js && node --check src/economy/duty.js"
   },
   "dependencies": {
     "discord.js": "^14.19.3",

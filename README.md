@@ -11,7 +11,7 @@ Discord-Bot und Dashboard für VEXORA.
 - Funk: `/funk` sendet in den konfigurierten Funkkanal
 - Willkommens- und Abschiedsnachrichten
 - Logs für Beitritte, Austritte, gelöschte/bearbeitete Nachrichten, Bans, Rollen und Kanäle
-- Nachrichtenfilter meldet konfigurierte Begriffe zur Teamprüfung
+- KI-Beleidigungsfilter prüft Nachrichten automatisch auf mögliche Beleidigungen, Mobbing und Hassrede und meldet Treffer zur Teamprüfung
 - Spam- und Raid-Schutz erkennen ungewöhnliche Aktivität und senden Teamhinweise; es gibt keine automatische Bestrafung
 - Owner-/Moderator-Zugriff und Prüfung der Rollen-Hierarchie
 
@@ -55,7 +55,7 @@ Diese Variablen müssen im privaten Host-Dashboard gesetzt werden:
 
 Die Slash-Befehle werden nach dem Start in allen Servern registriert, auf denen VEXORA installiert ist. Beim Hinzufügen des Bots zu einem weiteren Server werden sie dort ebenfalls registriert.
 
-Die im Dashboard gespeicherten Kanal-, Moderatorrollen- und Filterwerte überschreiben die entsprechenden Standardwerte für den ausgewählten Server.
+Die im Dashboard gespeicherten Kanal-, Moderatorrollen- und Filterwerte überschreiben die entsprechenden Standardwerte für den ausgewählten Server. Der KI-Filter nutzt Cloudflare Workers AI und sendet Nachrichteninhalte zur Klassifikation an Cloudflare. Er meldet nur mögliche Treffer; Moderatoren entscheiden manuell. Das Workers-AI-Free-Kontingent ist begrenzt und kann bei Überschreitung auf Paid-Tarifen kostenpflichtig werden.
 
 Aktiviere im Discord Developer Portal die Intents `Server Members Intent` und `Message Content Intent`. Die Bot-Rolle muss oberhalb der Rollen liegen, die sie verwalten soll. Vergib nur notwendige Discord-Berechtigungen.
 

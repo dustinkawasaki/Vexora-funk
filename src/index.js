@@ -65,8 +65,8 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
     if (interaction.isButton() && interaction.customId.startsWith("vexhire:")) {
       const [, action, guildId, userId, job, expiresAt, dispatcherId] = interaction.customId.split(":");
-      if (interaction.user.id !== userId || interaction.guildId !== guildId) {
-        await interaction.reply({ content: "Dieses Berufsangebot gehört einer anderen Person oder einem anderen Server.", flags: MessageFlags.Ephemeral });
+      if (interaction.user.id !== userId) {
+        await interaction.reply({ content: "Dieses Berufsangebot gehört einer anderen Person.", flags: MessageFlags.Ephemeral });
         return;
       }
       if (!["police", "fire", "ems", "trucker"].includes(job) || !Number.isFinite(Number(expiresAt))) {
@@ -105,11 +105,17 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.editReply({ content: "Du hast inzwischen bereits einen aktiven Beruf. Dieses Angebot kann nicht mehr angenommen werden.", components: [] });
             return;
           }
-          await callDutyRpc("vexora_choose_job", {
-            p_guild_id: guildId, p_user_id: userId, p_job: job,
-            p_hourly_rate: getJobDefinition(job).hourlyRate
-          });
-          await member.roles.add(role, `Berufsangebot angenommen: ${factionNames[job]}`);
+          const hadRole = member.roles.cache.has(role.id);
+          if (!hadRole) await member.roles.add(role, `Berufsangebot angenommen: ${factionNames[job]}`);
+          try {
+            await callDutyRpc("vexora_choose_job", {
+              p_guild_id: guildId, p_user_id: userId, p_job: job,
+              p_hourly_rate: getJobDefinition(job).hourlyRate
+            });
+          } catch (error) {
+            if (!hadRole) await member.roles.remove(role, "VEXORA: Berufsangebot wegen Datenbankfehler zurückgerollt.").catch(() => null);
+            throw error;
+          }
         } catch (error) {
           await interaction.editReply({ content: `Die Einstellung konnte nicht abgeschlossen werden: ${String(error.message).slice(0,180)}. Bitte wende dich an die Leitstelle.`, components: [] });
           return;

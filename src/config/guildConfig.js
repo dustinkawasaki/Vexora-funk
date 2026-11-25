@@ -38,6 +38,7 @@ export async function getGuildEnv(guildId) {
     GOODBYE_CHANNEL_ID: settings.goodbyeChannel || process.env.GOODBYE_CHANNEL_ID || "",
     FUNK_CHANNEL_ID: settings.funkChannel || process.env.FUNK_CHANNEL_ID || "",
     MODERATOR_ROLE_IDS: settings.moderatorRole || process.env.MODERATOR_ROLE_IDS || "",
+    VEXORA_DISPATCHER_ROLE_IDS: settings.dispatcherRole || process.env.VEXORA_DISPATCHER_ROLE_IDS || "",
     VEXORA_LOGS_ENABLED: settings.logsEnabled === false ? "false" : "true",
     VEXORA_FILTER_ENABLED: settings.filterEnabled === true ? "true" : "false",
     VEXORA_SPAM_ENABLED: settings.spamEnabled === true ? "true" : "false",
@@ -45,4 +46,18 @@ export async function getGuildEnv(guildId) {
     VEXORA_WELCOME_ENABLED: settings.welcomeEnabled === true ? "true" : "false",
     PROMOTE_PERMISSION: settings.promotePermission === "administrator" ? "administrator" : "manage_roles",
   };
+}
+
+export async function saveGuildSettings(guildId, settings, updatedBy = null) {
+  if (!guildId) throw new Error("Server-ID fehlt.");
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) throw new Error("Supabase ist nicht konfiguriert.");
+  const url = new URL("/rest/v1/vexora_guild_settings", base);
+  url.searchParams.set("on_conflict", "guild_id");
+  const response = await fetch(url, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ guild_id: guildId, settings, updated_by: updatedBy, updated_at: new Date().toISOString() }) });
+  if (!response.ok) throw new Error(`Server-Einstellungen konnten nicht gespeichert werden (HTTP ${response.status}).`);
+  const rows = await response.json();
+  cache.delete(guildId);
+  return rows[0]?.settings || settings;
 }

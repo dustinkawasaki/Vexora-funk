@@ -8,7 +8,7 @@ import { registerCommands } from "./commands/register.js";
 import { attachMessageScanner } from "./moderation/messageScanner.js";
 import { handleModerationButton } from "./moderation/actions.js";
 import { attachLogging } from "./events/logging.js";
-import { getGuildEnv } from "./config/guildConfig.js";
+import { getGuildEnv, getGuildSettings, saveGuildSettings } from "./config/guildConfig.js";
 import { attachActivityGuard } from "./moderation/activityGuard.js";
 import { attachGlobalWarningAlerts, createGlobalWarning, isGlobalBotModerator } from "./moderation/globalWarnings.js";
 import { callDutyRpc, getJobDefinition, formatDuration } from "./economy/duty.js";
@@ -26,6 +26,7 @@ const client = new Client({ intents: [
 ] });
 
 let commandsReady = false;
+const setupCommandState = new Map();
 client.once(Events.ClientReady, async ready => {
   console.log(`VEXORA Bot online: ${ready.user.tag}`);
   try {
@@ -33,6 +34,18 @@ client.once(Events.ClientReady, async ready => {
     if (!guildIds.length && process.env.DISCORD_GUILD_ID) guildIds.push(process.env.DISCORD_GUILD_ID);
     await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildIds });
     commandsReady = true;
+    for (const guildId of ready.guilds.cache.keys()) setupCommandState.set(guildId, (await getGuildSettings(guildId)).setupCommandEnabled === true);
+    setInterval(async () => {
+      for (const guildId of ready.guilds.cache.keys()) {
+        try {
+          const enabled = (await getGuildSettings(guildId)).setupCommandEnabled === true;
+          if (setupCommandState.get(guildId) !== enabled) {
+            await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildIds: [guildId] });
+            setupCommandState.set(guildId, enabled);
+          }
+        } catch (error) { console.error(`VEXORA: Befehlsstatus für ${guildId} konnte nicht aktualisiert werden:`, error.message); }
+      }
+    }, 30_000);
   } catch (error) {
     console.error("VEXORA: Slash-Commands konnten nicht registriert werden:", error);
   }
@@ -169,6 +182,18 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton() && await handleModerationButton(interaction)) return;
     if (!interaction.isChatInputCommand()) return;
     const name = interaction.commandName;
+    if (name === "setup") {
+      if (!interaction.guildId) return reply(interaction, "Die Einrichtung funktioniert nur auf einem Discord-Server.");
+      if (interaction.user.id !== interaction.guild.ownerId && !interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) return reply(interaction, "Nur der Server-Owner oder Administratoren dürfen die Leitstellen-Rolle einrichten.");
+      const role = interaction.options.getRole("rolle", true);
+      if (role.managed || role.id === interaction.guild.id) return reply(interaction, "Diese Rolle kann nicht als Leitstellen-Rolle verwendet werden.");
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const settings = await getGuildSettings(interaction.guildId);
+      await saveGuildSettings(interaction.guildId, { ...settings, dispatcherRole: role.id, setupCommandEnabled: false }, interaction.user.id);
+      await registerCommands({ token: process.env.DISCORD_TOKEN, clientId: process.env.DISCORD_CLIENT_ID, guildIds: [interaction.guildId] });
+      setupCommandState.set(interaction.guildId, false);
+      return interaction.editReply({ content: `Leitstellen-Rolle gespeichert: <@&${role.id}>. Der Einrichtungsbefehl wurde wieder ausgeblendet. Du kannst ihn jederzeit im VEXORA-Dashboard erneut aktivieren.` });
+    }
     if (name === "kündigen") {
       if (!interaction.guildId) return reply(interaction, "Diesen Befehl kannst du nur auf einem Discord-Server verwenden.");
       const profile = await callDutyRpc("vexora_get_job_profile", { p_guild_id: interaction.guildId, p_user_id: interaction.user.id });

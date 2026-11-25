@@ -78,26 +78,26 @@ client.on(Events.InteractionCreate, async interaction => {
           const profile = await callDutyRpc("vexora_choose_job", {
             ...baseArgs, p_job: selectedJob, p_hourly_rate: definition.hourlyRate
           });
-          return finish(\`Dein Beruf ist **\${definition.label}**. Stundenlohn: **\${profile.hourly_rate} € Spielgeld**. Du kannst aktuell nur einen Beruf haben; Umschulung folgt später.\`);
+          return finish(`Dein Beruf ist **${definition.label}**. Stundenlohn: **${profile.hourly_rate} € Spielgeld**. Du kannst aktuell nur einen Beruf haben; Umschulung folgt später.`);
         }
         const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
         if (!profile.has_job) return finish("Du hast noch keinen Beruf. Wähle einen mit **/job waehlen**.");
         const dutyText = profile.on_duty
-          ? \`Im Dienst seit <t:\${Math.floor(Date.parse(profile.started_at) / 1000)}:R>\`
+          ? `Im Dienst seit <t:${Math.floor(Date.parse(profile.started_at) / 1000)}:R>`
           : "Aktuell nicht im Dienst";
-        return finish(\`**\${getJobDefinition(profile.job)?.label || profile.job}** · Rang: \${profile.rank_name}\nStundenlohn: **\${profile.hourly_rate} € Spielgeld**\nKontostand: **\${profile.balance} € Spielgeld**\n\${dutyText}\`);
+        return finish(`**${getJobDefinition(profile.job)?.label || profile.job}** · Rang: ${profile.rank_name}\nStundenlohn: **${profile.hourly_rate} € Spielgeld**\nKontostand: **${profile.balance} € Spielgeld**\n${dutyText}`);
       }
       if (name === "einstempeln") {
         const result = await callDutyRpc("vexora_start_shift", baseArgs);
-        return finish(\`Du bist jetzt als **\${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **\${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:\${Math.floor(Date.parse(result.started_at) / 1000)}:F>\`);
+        return finish(`Du bist jetzt als **${getJobDefinition(result.job)?.label || result.job}** eingestempelt. Dein Stundenlohn beträgt **${result.hourly_rate} € Spielgeld**.\nDienstbeginn: <t:${Math.floor(Date.parse(result.started_at) / 1000)}:F>`);
       }
       if (name === "balance") {
         const profile = await callDutyRpc("vexora_get_job_profile", baseArgs);
         if (!profile.has_job) return finish("Du hast noch keinen Beruf und deshalb noch kein VEXORA-Konto.");
-        return finish(\`Dein Kontostand auf **diesem Server** beträgt **\${profile.balance} € Spielgeld**.\`);
+        return finish(`Dein Kontostand auf **diesem Server** beträgt **${profile.balance} € Spielgeld**.`);
       }
       const result = await callDutyRpc("vexora_end_shift", baseArgs);
-      return finish(\`Dienst beendet: **\${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **\${formatDuration(result.duration_minutes)}**\nVerdient: **+\${result.earned} € Spielgeld**\nNeuer Kontostand: **\${result.balance} € Spielgeld**\`);
+      return finish(`Dienst beendet: **${getJobDefinition(result.job)?.label || result.job}**\nDienstzeit: **${formatDuration(result.duration_minutes)}**\nVerdient: **+${result.earned} € Spielgeld**\nNeuer Kontostand: **${result.balance} € Spielgeld**`);
     }
 
     const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);

@@ -24,6 +24,21 @@ jobs:
       - name: Check JavaScript syntax
         run: npm run check
 
+      - name: Sync setup secret to Cloudflare Worker
+        env:
+          VEXORA_SETUP_SECRET: ${{ secrets.VEXORA_SETUP_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$VEXORA_SETUP_SECRET" ]; then
+            echo "::notice::VEXORA_SETUP_SECRET is not set; the Worker cron will register commands automatically."
+            exit 0
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::GitHub secret CLOUDFLARE_API_TOKEN is missing; cannot sync SETUP_SECRET to Cloudflare."
+            exit 1
+          fi
+          printf '%s' "$VEXORA_SETUP_SECRET" | npx --yes wrangler@4 secret put SETUP_SECRET
+
       - name: Register current VEXORA slash commands
         env:
           VEXORA_SETUP_SECRET: ${{ secrets.VEXORA_SETUP_SECRET }}
